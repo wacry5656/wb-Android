@@ -35,9 +35,9 @@ object QuestionMapper {
             grade = entity.grade,
             questionType = entity.questionType,
             source = entity.source,
-            questionText = entity.questionText.orEmpty(),
-            userAnswer = entity.userAnswer.orEmpty(),
-            correctAnswer = entity.correctAnswer.orEmpty(),
+            questionText = entity.questionText,
+            userAnswer = entity.userAnswer,
+            correctAnswer = entity.correctAnswer,
             notes = entity.notes.orEmpty(),
             errorCause = entity.errorCause,
             tags = entity.tags?.let {

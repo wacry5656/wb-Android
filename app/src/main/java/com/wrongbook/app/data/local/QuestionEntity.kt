@@ -11,9 +11,9 @@ data class QuestionEntity(
     val grade: String,
     val questionType: String,
     val source: String,
-    val questionText: String?,
-    val userAnswer: String?,
-    val correctAnswer: String?,
+    val questionText: String,
+    val userAnswer: String,
+    val correctAnswer: String,
     val notes: String?,
     val errorCause: String,
     val tags: String?,               // JSON serialized List<String>
