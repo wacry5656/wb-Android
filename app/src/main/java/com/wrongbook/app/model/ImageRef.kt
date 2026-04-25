@@ -2,14 +2,16 @@ package com.wrongbook.app.model
 
 data class ImageRef(
     val id: String,
-    val uri: String = "",
-    val storageType: StorageType = StorageType.URI,
+    val storage: String = "file",
+    val kind: String = "question",
     val createdAt: Long = System.currentTimeMillis(),
+    val mimeType: String? = null,
     val dataUrl: String? = null,
-    val storage: String? = null,
-    val kind: String? = null,
-    val mimeType: String? = null
+    val uri: String? = null
 ) {
     val displayUri: String
-        get() = dataUrl ?: uri
+        get() = dataUrl ?: uri.orEmpty()
+
+    val storageType: StorageType
+        get() = if (storage == "inline") StorageType.INLINE else StorageType.URI
 }

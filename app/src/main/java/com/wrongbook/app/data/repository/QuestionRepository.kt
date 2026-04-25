@@ -76,10 +76,10 @@ class QuestionRepository(private val dao: QuestionDao) {
         grade: String,
         questionType: String,
         source: String,
-        questionText: String?,
-        userAnswer: String?,
-        correctAnswer: String?,
-        notes: String?,
+        questionText: String,
+        userAnswer: String,
+        correctAnswer: String,
+        notes: String,
         errorCause: String,
         tags: List<String>,
         imageRefs: List<ImageRef>,
@@ -94,11 +94,9 @@ class QuestionRepository(private val dao: QuestionDao) {
                 current.questionText != questionText ||
                 current.userAnswer != userAnswer ||
                 current.correctAnswer != correctAnswer ||
-                current.notes != notes ||
                 current.errorCause != errorCause ||
                 current.tags != tags ||
-                current.imageRefs != imageRefs ||
-                current.noteImageRefs != noteImageRefs
+                current.imageRefs != imageRefs
 
         current.copy(
             title = title,
@@ -136,6 +134,7 @@ class QuestionRepository(private val dao: QuestionDao) {
     ): Boolean = mutate(id) { current, _ ->
         current.copy(
             detailedExplanation = explanation,
+            detailedExplanationUpdatedAt = System.currentTimeMillis(),
             explanationContentUpdatedAt = baseContentUpdatedAt
         )
     }
@@ -147,23 +146,21 @@ class QuestionRepository(private val dao: QuestionDao) {
     ): Boolean = mutate(id) { current, _ ->
         current.copy(
             hint = hint,
+            hintUpdatedAt = System.currentTimeMillis(),
             hintContentUpdatedAt = baseContentUpdatedAt
         )
     }
 
-    suspend fun saveNotes(id: String, notes: String?): Boolean = mutate(id) { current, now ->
-        val normalizedNotes = notes?.takeIf { it.isNotBlank() }
+    suspend fun saveNotes(id: String, notes: String): Boolean = mutate(id) { current, _ ->
         current.copy(
-            notes = normalizedNotes,
-            contentUpdatedAt = if (current.notes != normalizedNotes) now else current.contentUpdatedAt
+            notes = notes
         )
     }
 
     suspend fun saveNoteImages(id: String, noteImageRefs: List<ImageRef>): Boolean =
-        mutate(id) { current, now ->
+        mutate(id) { current, _ ->
             current.copy(
-                noteImageRefs = noteImageRefs,
-                contentUpdatedAt = if (current.noteImageRefs != noteImageRefs) now else current.contentUpdatedAt
+                noteImageRefs = noteImageRefs
             )
         }
 
@@ -217,5 +214,5 @@ class QuestionRepository(private val dao: QuestionDao) {
     }
 
     private fun dirtyStatusFor(current: SyncStatus): SyncStatus =
-        if (current == SyncStatus.SYNCED) SyncStatus.MODIFIED else SyncStatus.PENDING
+        SyncStatus.MODIFIED
 }

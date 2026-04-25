@@ -72,11 +72,12 @@ class HomeViewModel(
                 }
             } catch (e: Exception) {
                 _syncState.update {
-                    it.copy(isSyncing = false, message = "同步失败：${e.message}")
+                    it.copy(isSyncing = false, message = "同步失败，请检查 VPS 配置")
                 }
             }
         }
     }
+
 
     companion object {
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {

@@ -187,9 +187,9 @@ fun DetailScreen(
                 onSaveNotes = viewModel::saveNotes,
                 onAddNoteImage = { noteImageLauncher.launch(arrayOf("image/*")) },
                 onTakeNotePhoto = {
-                    val imageRef = ImageFileStore.createCameraImageRef(context)
+                    val imageRef = ImageFileStore.createCameraImageRef(context, kind = "note")
                     pendingNoteCameraImage = imageRef
-                    noteCameraLauncher.launch(imageRef.uri.toUri())
+                    noteCameraLauncher.launch(requireNotNull(imageRef.uri).toUri())
                 },
                 onRemoveNoteImage = viewModel::removeNoteImageRef,
                 onAnalyze = viewModel::analyze,
@@ -615,7 +615,7 @@ suspend fun importAndAddNoteImage(
     onError: (String) -> Unit
 ) {
     try {
-        onAdd(ImageFileStore.importImage(context, uri))
+        onAdd(ImageFileStore.importImage(context, uri, kind = "note"))
     } catch (e: Exception) {
         onError("图片笔记导入失败: ${e.message}")
     }

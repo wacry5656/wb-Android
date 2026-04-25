@@ -24,10 +24,10 @@ object QuestionMapper {
             grade = entity.grade,
             questionType = entity.questionType,
             source = entity.source,
-            questionText = entity.questionText,
-            userAnswer = entity.userAnswer,
-            correctAnswer = entity.correctAnswer,
-            notes = entity.notes,
+            questionText = entity.questionText.orEmpty(),
+            userAnswer = entity.userAnswer.orEmpty(),
+            correctAnswer = entity.correctAnswer.orEmpty(),
+            notes = entity.notes.orEmpty(),
             errorCause = entity.errorCause,
             tags = entity.tags?.let {
                 runCatching {
@@ -44,14 +44,19 @@ object QuestionMapper {
             reviewCount = entity.reviewCount,
             lastReviewedAt = entity.lastReviewedAt,
             nextReviewAt = entity.nextReviewAt,
-            reviewStatus = runCatching { ReviewStatus.valueOf(entity.reviewStatus) }.getOrDefault(ReviewStatus.NEW),
+            reviewStatus = when (entity.reviewStatus.uppercase()) {
+                "REVIEWING", "MASTERED" -> ReviewStatus.REVIEWING
+                else -> ReviewStatus.NEW
+            },
             analysis = entity.analysis?.let {
                 runCatching { gson.fromJson(it, QuestionAnalysis::class.java) }.getOrNull()
             },
             analysisContentUpdatedAt = entity.analysisContentUpdatedAt,
             detailedExplanation = entity.detailedExplanation,
+            detailedExplanationUpdatedAt = entity.detailedExplanationUpdatedAt,
             explanationContentUpdatedAt = entity.explanationContentUpdatedAt,
             hint = entity.hint,
+            hintUpdatedAt = entity.hintUpdatedAt,
             hintContentUpdatedAt = entity.hintContentUpdatedAt,
             followUpChats = entity.followUpChats?.let {
                 runCatching {
@@ -104,8 +109,10 @@ object QuestionMapper {
             analysis = question.analysis?.let { gson.toJson(it) },
             analysisContentUpdatedAt = question.analysisContentUpdatedAt,
             detailedExplanation = question.detailedExplanation,
+            detailedExplanationUpdatedAt = question.detailedExplanationUpdatedAt,
             explanationContentUpdatedAt = question.explanationContentUpdatedAt,
             hint = question.hint,
+            hintUpdatedAt = question.hintUpdatedAt,
             hintContentUpdatedAt = question.hintContentUpdatedAt,
             followUpChats = if (question.followUpChats.isNotEmpty()) gson.toJson(question.followUpChats) else null,
             followUpContentUpdatedAt = question.followUpContentUpdatedAt,

@@ -117,7 +117,7 @@ class DetailViewModel(
         viewModelScope.launch {
             _localState.update { it.copy(isSavingNotes = true) }
             try {
-                val saved = repository.saveNotes(question.id, notes.trim().ifBlank { null })
+                val saved = repository.saveNotes(question.id, notes.trim())
                 _localState.update {
                     it.copy(
                         notesInput = if (saved) null else notes,

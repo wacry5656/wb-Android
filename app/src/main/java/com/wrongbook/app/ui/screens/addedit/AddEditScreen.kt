@@ -70,7 +70,7 @@ fun AddEditScreen(
                 importAndAddImage(
                     uri = it,
                     context = context,
-                    onAdd = { imageRef -> viewModel.addImageRef(imageRef, recognizeText = true) },
+                    onAdd = viewModel::addImageRef,
                     onError = viewModel::showError
                 )
             }
@@ -83,7 +83,7 @@ fun AddEditScreen(
         val imageRef = pendingMainCameraImage
         pendingMainCameraImage = null
         if (success && imageRef != null) {
-            viewModel.addImageRef(imageRef, recognizeText = true)
+            viewModel.addImageRef(imageRef)
         } else {
             viewModel.showError("拍照已取消或保存失败")
         }
@@ -210,17 +210,25 @@ fun AddEditScreen(
                             title = "题目图片",
                             images = uiState.imageRefs,
                             emptyText = "还没有题目图片",
-                            addButtonText = "选择并识别",
+                            addButtonText = "选择图片",
                             onAdd = { mainImageLauncher.launch(arrayOf("image/*")) },
                             onRemove = viewModel::removeImageRef,
-                            takePhotoText = "拍照识别",
+                            takePhotoText = "拍照",
                             onTakePhoto = {
-                                val imageRef = ImageFileStore.createCameraImageRef(context)
+                                val imageRef = ImageFileStore.createCameraImageRef(context, kind = "question")
                                 pendingMainCameraImage = imageRef
-                                mainCameraLauncher.launch(imageRef.uri.toUri())
+                                mainCameraLauncher.launch(requireNotNull(imageRef.uri).toUri())
                             },
-                            isBusy = uiState.isRecognizingQuestionImage,
-                            busyText = "正在识别图片文字..."
+                            isBusy = false,
+                            busyText = "正在导入题目图片..."
+                        )
+                    }
+
+                    item {
+                        Text(
+                            text = "AI 将根据题目图片和补充信息生成分析。题目文字可选填写，用于提高分析准确度。",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -238,7 +246,7 @@ suspend fun importAndAddImage(
     onError: (String) -> Unit
 ) {
     try {
-        onAdd(ImageFileStore.importImage(context, uri))
+        onAdd(ImageFileStore.importImage(context, uri, kind = "question"))
     } catch (e: Exception) {
         onError("图片导入失败: ${e.message}")
     }

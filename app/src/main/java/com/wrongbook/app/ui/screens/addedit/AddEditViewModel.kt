@@ -9,7 +9,6 @@ import com.wrongbook.app.model.ImageRef
 import com.wrongbook.app.model.Question
 import com.wrongbook.app.model.SubjectCatalog
 import com.wrongbook.app.model.SyncStatus
-import com.wrongbook.app.ocr.OcrService
 import com.wrongbook.app.review.ReviewService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +36,6 @@ data class AddEditUiState(
     val imageRefs: List<ImageRef> = emptyList(),
     val noteImageRefs: List<ImageRef> = emptyList(),
     val categories: List<String> = SubjectCatalog.subjects,
-    val isRecognizingQuestionImage: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
     val errorMessage: String? = null
@@ -45,7 +43,6 @@ data class AddEditUiState(
 
 class AddEditViewModel(
     private val repository: QuestionRepository,
-    private val ocrService: OcrService,
     private val questionId: String? = null
 ) : ViewModel() {
 
@@ -121,11 +118,8 @@ class AddEditViewModel(
     fun onNotesChange(value: String) { _uiState.update { it.copy(notes = value) } }
     fun onErrorCauseChange(value: String) { _uiState.update { it.copy(errorCause = value) } }
     fun onTagsTextChange(value: String) { _uiState.update { it.copy(tagsText = value) } }
-    fun addImageRef(imageRef: ImageRef, recognizeText: Boolean = false) {
+    fun addImageRef(imageRef: ImageRef) {
         _uiState.update { it.copy(imageRefs = it.imageRefs + imageRef) }
-        if (recognizeText) {
-            recognizeQuestionText(imageRef.uri)
-        }
     }
 
     fun removeImageRef(imageId: String) {
@@ -145,52 +139,6 @@ class AddEditViewModel(
     }
 
     fun clearError() { _uiState.update { it.copy(errorMessage = null) } }
-
-    private fun recognizeQuestionText(uri: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRecognizingQuestionImage = true) }
-            try {
-                val recognized = ocrService.recognize(uri)
-                if (recognized.isBlank()) {
-                    _uiState.update {
-                        it.copy(
-                            isRecognizingQuestionImage = false,
-                            errorMessage = "没有识别到文字，请换一张更清晰的图片或手动输入题干"
-                        )
-                    }
-                    return@launch
-                }
-
-                _uiState.update { state ->
-                    val nextQuestionText = if (state.questionText.isBlank()) {
-                        recognized
-                    } else {
-                        state.questionText.trimEnd() + "\n\n" + recognized
-                    }
-                    state.copy(
-                        isRecognizingQuestionImage = false,
-                        title = state.title.ifBlank { firstTitleLine(recognized) },
-                        questionText = nextQuestionText,
-                        errorMessage = "图片文字识别完成，已填入题干"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isRecognizingQuestionImage = false,
-                        errorMessage = "图片文字识别失败: ${e.message}"
-                    )
-                }
-            }
-        }
-    }
-
-    private fun firstTitleLine(text: String): String =
-        text.lineSequence()
-            .map { it.trim() }
-            .firstOrNull { it.isNotEmpty() }
-            ?.take(30)
-            .orEmpty()
 
     fun save() {
         val state = _uiState.value
@@ -230,10 +178,10 @@ class AddEditViewModel(
                             grade = state.grade,
                             questionType = state.questionType,
                             source = state.source,
-                            questionText = state.questionText.ifBlank { null },
-                            userAnswer = state.userAnswer.ifBlank { null },
-                            correctAnswer = state.correctAnswer.ifBlank { null },
-                            notes = state.notes.ifBlank { null },
+                            questionText = state.questionText,
+                            userAnswer = state.userAnswer,
+                            correctAnswer = state.correctAnswer,
+                            notes = state.notes,
                             errorCause = state.errorCause,
                             tags = tags,
                             imageRefs = state.imageRefs,
@@ -249,10 +197,10 @@ class AddEditViewModel(
                         grade = state.grade,
                         questionType = state.questionType,
                         source = state.source,
-                        questionText = state.questionText.ifBlank { null },
-                        userAnswer = state.userAnswer.ifBlank { null },
-                        correctAnswer = state.correctAnswer.ifBlank { null },
-                        notes = state.notes.ifBlank { null },
+                        questionText = state.questionText,
+                        userAnswer = state.userAnswer,
+                        correctAnswer = state.correctAnswer,
+                        notes = state.notes,
                         errorCause = state.errorCause,
                         tags = tags,
                         createdAt = now,
@@ -292,7 +240,6 @@ class AddEditViewModel(
             val app = WrongBookApp.instance
             return AddEditViewModel(
                 repository = app.repository,
-                ocrService = OcrService(app.applicationContext),
                 questionId = questionId
             ) as T
         }

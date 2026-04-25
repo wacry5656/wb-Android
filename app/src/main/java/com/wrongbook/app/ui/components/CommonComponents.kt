@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.wrongbook.app.model.Question
 import com.wrongbook.app.model.ReviewStatus
-import com.wrongbook.app.ui.theme.ReviewMastered
 import com.wrongbook.app.ui.theme.ReviewNew
 import com.wrongbook.app.ui.theme.ReviewReviewing
 import com.wrongbook.app.utils.TimeUtils
@@ -179,7 +178,6 @@ fun ReviewStatusBadge(status: ReviewStatus) {
     val (text, color) = when (status) {
         ReviewStatus.NEW -> "新题" to ReviewNew
         ReviewStatus.REVIEWING -> "复习中" to ReviewReviewing
-        ReviewStatus.MASTERED -> "已掌握" to ReviewMastered
     }
     Surface(
         color = color.copy(alpha = 0.12f),

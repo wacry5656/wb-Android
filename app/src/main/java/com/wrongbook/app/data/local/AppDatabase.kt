@@ -7,7 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [QuestionEntity::class], version = 3, exportSchema = false)
+@Database(entities = [QuestionEntity::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun questionDao(): QuestionDao
 
@@ -49,6 +49,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE questions ADD COLUMN detailedExplanationUpdatedAt INTEGER")
+                db.execSQL("ALTER TABLE questions ADD COLUMN hintUpdatedAt INTEGER")
+                db.execSQL(
+                    "UPDATE questions SET detailedExplanationUpdatedAt = COALESCE(explanationContentUpdatedAt, contentUpdatedAt) WHERE detailedExplanation IS NOT NULL"
+                )
+                db.execSQL(
+                    "UPDATE questions SET hintUpdatedAt = COALESCE(hintContentUpdatedAt, contentUpdatedAt) WHERE hint IS NOT NULL"
+                )
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -58,7 +71,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "wrongbook.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                 INSTANCE = instance
                 instance

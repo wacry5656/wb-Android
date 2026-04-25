@@ -31,8 +31,10 @@ data class QuestionEntity(
     val analysis: String?,           // JSON serialized QuestionAnalysis
     val analysisContentUpdatedAt: Long?,
     val detailedExplanation: String?,
+    val detailedExplanationUpdatedAt: Long?,
     val explanationContentUpdatedAt: Long?,
     val hint: String?,
+    val hintUpdatedAt: Long?,
     val hintContentUpdatedAt: Long?,
     val followUpChats: String?,      // JSON serialized List<FollowUpChat>
     val followUpContentUpdatedAt: Long?,

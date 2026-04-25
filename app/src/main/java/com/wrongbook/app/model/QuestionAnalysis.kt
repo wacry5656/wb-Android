@@ -12,7 +12,11 @@ data class QuestionAnalysis(
     val commonMistakes: List<String> = emptyList(),
     @SerializedName(value = "solutionMethods", alternate = ["solution_methods", "recommendedMethods", "recommended_methods"])
     val solutionMethods: List<String> = emptyList(),
+    @SerializedName(value = "cautions", alternate = ["notices"])
+    val cautions: List<String> = emptyList(),
     @SerializedName(value = "notices", alternate = ["cautions"])
     val notices: List<String> = emptyList(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val studyAdvice: String = "",
+    val updatedAt: Long = System.currentTimeMillis(),
+    val source: String = "ai"
 )

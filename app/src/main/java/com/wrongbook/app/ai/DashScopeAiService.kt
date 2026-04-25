@@ -201,12 +201,19 @@ class DashScopeAiService(
                     ?: json.getAsJsonArray("solution_methods")?.map { it.asString }
                     ?: json.getAsJsonArray("recommended_methods")?.map { it.asString }
                     ?: emptyList(),
+                cautions = json.getAsJsonArray("cautions")
+                    ?.map { it.asString }
+                    ?: json.getAsJsonArray("notices")?.map { it.asString }
+                    ?: json.getAsJsonArray("tips")?.map { it.asString }
+                    ?: emptyList(),
                 notices = json.getAsJsonArray("notices")
                     ?.map { it.asString }
                     ?: json.getAsJsonArray("cautions")?.map { it.asString }
                     ?: json.getAsJsonArray("tips")?.map { it.asString }
                     ?: emptyList(),
-                updatedAt = now
+                studyAdvice = json.get("studyAdvice")?.asString ?: "",
+                updatedAt = now,
+                source = "ai"
             )
         } catch (e: Exception) {
             Log.w(TAG, "JSON parse fallback, raw length=${raw.length}", e)
@@ -215,7 +222,9 @@ class DashScopeAiService(
                 difficulty = "中等",
                 difficultyScore = 3,
                 solutionMethods = listOf(raw.take(200)),
-                updatedAt = now
+                studyAdvice = raw.take(200),
+                updatedAt = now,
+                source = "ai"
             )
         }
     }

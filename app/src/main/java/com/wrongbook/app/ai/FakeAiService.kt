@@ -37,12 +37,19 @@ class FakeAiService : AiService {
                 add("计算或推导过程中出现低级错误")
             },
             solutionMethods = listOf("先审题标条件", "建立对应模型", "分步骤推导并回代检验"),
+            cautions = listOf(
+                "做题前先通读题目，标记关键词和已知条件",
+                "解题过程中保持步骤清晰，方便回头检查",
+                "完成后将结果代入原题验证合理性"
+            ),
             notices = listOf(
                 "做题前先通读题目，标记关键词和已知条件",
                 "解题过程中保持步骤清晰，方便回头检查",
                 "完成后将结果代入原题验证合理性"
             ),
-            updatedAt = System.currentTimeMillis()
+            studyAdvice = "先审题标条件，再建立模型，最后分步骤推导并回代检验。",
+            updatedAt = System.currentTimeMillis(),
+            source = "demo"
         )
     }
 

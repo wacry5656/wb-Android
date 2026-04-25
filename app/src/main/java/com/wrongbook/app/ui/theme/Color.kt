@@ -25,4 +25,3 @@ val OnError = Color(0xFFFFFFFF)
 // 复习状态标签颜色
 val ReviewNew = Color(0xFF2196F3)
 val ReviewReviewing = Color(0xFFFF9800)
-val ReviewMastered = Color(0xFF4CAF50)

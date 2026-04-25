@@ -42,7 +42,7 @@ object ReviewService {
             reviewCount = newCount,
             lastReviewedAt = now,
             nextReviewAt = nextReview,
-            reviewStatus = if (nextMastery >= 5 || newCount >= 5) ReviewStatus.MASTERED else ReviewStatus.REVIEWING,
+            reviewStatus = if (newCount > 0) ReviewStatus.REVIEWING else ReviewStatus.NEW,
             masteryLevel = nextMastery,
             updatedAt = now
         )

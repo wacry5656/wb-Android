@@ -7,10 +7,10 @@ data class Question(
     val grade: String = "",
     val questionType: String = "",
     val source: String = "",
-    val questionText: String? = null,
-    val userAnswer: String? = null,
-    val correctAnswer: String? = null,
-    val notes: String? = null,
+    val questionText: String = "",
+    val userAnswer: String = "",
+    val correctAnswer: String = "",
+    val notes: String = "",
     val errorCause: String = "",
     val tags: List<String> = emptyList(),
     val masteryLevel: Int = 0,
@@ -27,14 +27,22 @@ data class Question(
     val analysis: QuestionAnalysis? = null,
     val analysisContentUpdatedAt: Long? = null,
     val detailedExplanation: String? = null,
+    val detailedExplanationUpdatedAt: Long? = null,
     val explanationContentUpdatedAt: Long? = null,
     val hint: String? = null,
+    val hintUpdatedAt: Long? = null,
     val hintContentUpdatedAt: Long? = null,
     val followUpChats: List<FollowUpChat> = emptyList(),
     val followUpContentUpdatedAt: Long? = null,
     val imageRefs: List<ImageRef> = emptyList(),
     val noteImageRefs: List<ImageRef> = emptyList()
 ) {
+    val image: String
+        get() = imageRefs.firstOrNull()?.displayUri.orEmpty()
+
+    val noteImages: List<String>
+        get() = noteImageRefs.map(ImageRef::displayUri)
+
     val isAnalysisStale: Boolean
         get() = analysis != null && analysisContentUpdatedAt != contentUpdatedAt
 
