@@ -7,7 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [QuestionEntity::class], version = 5, exportSchema = false)
+@Database(entities = [QuestionEntity::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun questionDao(): QuestionDao
 
@@ -98,6 +98,117 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS questions_new (
+                        id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        grade TEXT NOT NULL,
+                        questionType TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        questionText TEXT NOT NULL DEFAULT '',
+                        userAnswer TEXT NOT NULL DEFAULT '',
+                        correctAnswer TEXT NOT NULL DEFAULT '',
+                        notes TEXT,
+                        errorCause TEXT NOT NULL,
+                        tags TEXT,
+                        masteryLevel INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        deleted INTEGER NOT NULL,
+                        deletedAt INTEGER,
+                        syncStatus TEXT NOT NULL,
+                        contentUpdatedAt INTEGER NOT NULL,
+                        reviewCount INTEGER NOT NULL,
+                        lastReviewedAt INTEGER,
+                        nextReviewAt INTEGER,
+                        reviewStatus TEXT NOT NULL,
+                        notesUpdatedAt INTEGER,
+                        noteImagesUpdatedAt INTEGER,
+                        reviewUpdatedAt INTEGER,
+                        analysis TEXT,
+                        analysisContentUpdatedAt INTEGER,
+                        detailedExplanation TEXT,
+                        detailedExplanationUpdatedAt INTEGER,
+                        explanationContentUpdatedAt INTEGER,
+                        hint TEXT,
+                        hintUpdatedAt INTEGER,
+                        hintContentUpdatedAt INTEGER,
+                        followUpChats TEXT,
+                        followUpContentUpdatedAt INTEGER,
+                        imageRefs TEXT,
+                        noteImageRefs TEXT,
+                        PRIMARY KEY(id)
+                    )
+                    """.trimIndent()
+                )
+
+                db.execSQL(
+                    """
+                    INSERT INTO questions_new (
+                        id, title, category, grade, questionType, source,
+                        questionText, userAnswer, correctAnswer,
+                        notes, errorCause, tags, masteryLevel,
+                        createdAt, updatedAt, deleted, deletedAt, syncStatus,
+                        contentUpdatedAt, reviewCount, lastReviewedAt, nextReviewAt, reviewStatus,
+                        notesUpdatedAt, noteImagesUpdatedAt, reviewUpdatedAt,
+                        analysis, analysisContentUpdatedAt,
+                        detailedExplanation, detailedExplanationUpdatedAt, explanationContentUpdatedAt,
+                        hint, hintUpdatedAt, hintContentUpdatedAt,
+                        followUpChats, followUpContentUpdatedAt,
+                        imageRefs, noteImageRefs
+                    )
+                    SELECT
+                        id,
+                        title,
+                        category,
+                        grade,
+                        questionType,
+                        source,
+                        COALESCE(questionText, ''),
+                        COALESCE(userAnswer, ''),
+                        COALESCE(correctAnswer, ''),
+                        notes,
+                        errorCause,
+                        tags,
+                        masteryLevel,
+                        createdAt,
+                        updatedAt,
+                        deleted,
+                        deletedAt,
+                        syncStatus,
+                        contentUpdatedAt,
+                        reviewCount,
+                        lastReviewedAt,
+                        nextReviewAt,
+                        reviewStatus,
+                        notesUpdatedAt,
+                        noteImagesUpdatedAt,
+                        reviewUpdatedAt,
+                        analysis,
+                        analysisContentUpdatedAt,
+                        detailedExplanation,
+                        detailedExplanationUpdatedAt,
+                        explanationContentUpdatedAt,
+                        hint,
+                        hintUpdatedAt,
+                        hintContentUpdatedAt,
+                        followUpChats,
+                        followUpContentUpdatedAt,
+                        imageRefs,
+                        noteImageRefs
+                    FROM questions
+                    """.trimIndent()
+                )
+
+                db.execSQL("DROP TABLE questions")
+                db.execSQL("ALTER TABLE questions_new RENAME TO questions")
+            }
+        }
+
         private fun hasColumn(
             db: SupportSQLiteDatabase,
             tableName: String,
@@ -123,7 +234,13 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "wrongbook.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                ).addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5,
+                    MIGRATION_5_6
+                )
                     .build()
                 INSTANCE = instance
                 instance
