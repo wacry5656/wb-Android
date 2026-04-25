@@ -176,10 +176,9 @@ class DashScopeAiService(
     private fun parseAnalysis(raw: String): QuestionAnalysis {
         val now = System.currentTimeMillis()
 
-        // 尝试提取 JSON 块（可能被 ```json ... ``` 包裹）
-        val jsonStr = extractJsonBlock(raw)
-
         return try {
+            // 尝试提取 JSON 块（可能被 ```json ... ``` 包裹）
+            val jsonStr = extractJsonBlock(raw)
             val json = JsonParser.parseString(jsonStr).asJsonObject
 
             QuestionAnalysis(
@@ -234,20 +233,85 @@ class DashScopeAiService(
      * 处理常见情况：```json {...} ``` 或直接 {...}
      */
     private fun extractJsonBlock(text: String): String {
-        // 先尝试提取 ```json ... ``` 代码块
-        val codeBlockRegex = Regex("```(?:json)?\\s*\\n?(\\{[\\s\\S]*?})\\s*```")
-        codeBlockRegex.find(text)?.let {
-            return it.groupValues[1]
+        val trimmed = text.trim()
+
+        extractFencedJsonBlock(trimmed)?.let {
+            return it
         }
 
-        // 直接找第一个 { 到最后一个 }
-        val start = text.indexOf('{')
-        val end = text.lastIndexOf('}')
-        if (start != -1 && end > start) {
-            return text.substring(start, end + 1)
+        extractFirstJsonObject(trimmed)?.let {
+            return it
         }
 
         return text
+    }
+
+    private fun extractFencedJsonBlock(text: String): String? {
+        val openingFenceIndex = text.indexOf("```")
+        if (openingFenceIndex == -1) {
+            return null
+        }
+
+        val headerEndIndex = text.indexOf('\n', openingFenceIndex + 3)
+        if (headerEndIndex == -1) {
+            return null
+        }
+
+        val closingFenceIndex = text.indexOf("```", headerEndIndex + 1)
+        if (closingFenceIndex == -1) {
+            return null
+        }
+
+        val body = text.substring(headerEndIndex + 1, closingFenceIndex).trim()
+        if (body.isEmpty()) {
+            return null
+        }
+
+        return extractFirstJsonObject(body) ?: body
+    }
+
+    private fun extractFirstJsonObject(text: String): String? {
+        val startIndex = text.indexOf('{')
+        if (startIndex == -1) {
+            return null
+        }
+
+        var depth = 0
+        var inString = false
+        var escaped = false
+
+        for (index in startIndex until text.length) {
+            val char = text[index]
+
+            if (escaped) {
+                escaped = false
+                continue
+            }
+
+            when (char) {
+                '\\' -> {
+                    if (inString) {
+                        escaped = true
+                    }
+                }
+                '"' -> inString = !inString
+                '{' -> {
+                    if (!inString) {
+                        depth += 1
+                    }
+                }
+                '}' -> {
+                    if (!inString) {
+                        depth -= 1
+                        if (depth == 0) {
+                            return text.substring(startIndex, index + 1)
+                        }
+                    }
+                }
+            }
+        }
+
+        return null
     }
 
     private fun normalizeDifficulty(value: String?): String =
