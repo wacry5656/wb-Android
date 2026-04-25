@@ -44,6 +44,7 @@ object ReviewService {
             nextReviewAt = nextReview,
             reviewStatus = if (newCount > 0) ReviewStatus.REVIEWING else ReviewStatus.NEW,
             masteryLevel = nextMastery,
+            reviewUpdatedAt = now,
             updatedAt = now
         )
     }
@@ -55,6 +56,7 @@ object ReviewService {
 
         return question.copy(
             nextReviewAt = nextReview,
+            reviewUpdatedAt = now,
             updatedAt = now
         )
     }

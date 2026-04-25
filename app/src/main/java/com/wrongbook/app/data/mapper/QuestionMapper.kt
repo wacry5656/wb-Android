@@ -17,6 +17,17 @@ object QuestionMapper {
     private val gson = Gson()
 
     fun entityToDomain(entity: QuestionEntity): Question {
+        val parsedImageRefs = entity.imageRefs?.let {
+            runCatching {
+                gson.fromJson<List<ImageRef>>(it, object : TypeToken<List<ImageRef>>() {}.type)
+            }.getOrNull()
+        } ?: emptyList()
+        val parsedNoteImageRefs = entity.noteImageRefs?.let {
+            runCatching {
+                gson.fromJson<List<ImageRef>>(it, object : TypeToken<List<ImageRef>>() {}.type)
+            }.getOrNull()
+        } ?: emptyList()
+
         return Question(
             id = entity.id,
             title = entity.title,
@@ -48,6 +59,16 @@ object QuestionMapper {
                 "REVIEWING", "MASTERED" -> ReviewStatus.REVIEWING
                 else -> ReviewStatus.NEW
             },
+            notesUpdatedAt = entity.notesUpdatedAt
+                ?: entity.notes?.takeIf { it.isNotBlank() }?.let { entity.updatedAt },
+            noteImagesUpdatedAt = entity.noteImagesUpdatedAt
+                ?: parsedNoteImageRefs.takeIf { it.isNotEmpty() }?.let { entity.updatedAt },
+            reviewUpdatedAt = entity.reviewUpdatedAt
+                ?: if (entity.reviewCount > 0 || entity.lastReviewedAt != null) {
+                    entity.lastReviewedAt ?: entity.updatedAt
+                } else {
+                    null
+                },
             analysis = entity.analysis?.let {
                 runCatching { gson.fromJson(it, QuestionAnalysis::class.java) }.getOrNull()
             },
@@ -68,16 +89,8 @@ object QuestionMapper {
                 }
             } ?: emptyList(),
             followUpContentUpdatedAt = entity.followUpContentUpdatedAt,
-            imageRefs = entity.imageRefs?.let {
-                runCatching {
-                    gson.fromJson<List<ImageRef>>(it, object : TypeToken<List<ImageRef>>() {}.type)
-                }.getOrNull()
-            } ?: emptyList(),
-            noteImageRefs = entity.noteImageRefs?.let {
-                runCatching {
-                    gson.fromJson<List<ImageRef>>(it, object : TypeToken<List<ImageRef>>() {}.type)
-                }.getOrNull()
-            } ?: emptyList()
+            imageRefs = parsedImageRefs,
+            noteImageRefs = parsedNoteImageRefs
         )
     }
 
@@ -106,6 +119,9 @@ object QuestionMapper {
             lastReviewedAt = question.lastReviewedAt,
             nextReviewAt = question.nextReviewAt,
             reviewStatus = question.reviewStatus.name,
+            notesUpdatedAt = question.notesUpdatedAt,
+            noteImagesUpdatedAt = question.noteImagesUpdatedAt,
+            reviewUpdatedAt = question.reviewUpdatedAt,
             analysis = question.analysis?.let { gson.toJson(it) },
             analysisContentUpdatedAt = question.analysisContentUpdatedAt,
             detailedExplanation = question.detailedExplanation,

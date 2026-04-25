@@ -12,6 +12,7 @@ import java.util.UUID
 
 object ImageFileStore {
     private const val AUTHORITY_SUFFIX = ".fileprovider"
+    private val dataUrlPattern = Regex("^data:(image/[a-zA-Z0-9.+-]+);base64,(.+)$")
 
     suspend fun importImage(
         context: Context,
@@ -28,6 +29,33 @@ object ImageFileStore {
 
     fun createCameraImageRef(context: Context, kind: String = "question"): ImageRef =
         newImageFile(context).toImageRef(context, kind)
+
+    suspend fun importDataUrl(
+        context: Context,
+        dataUrl: String,
+        kind: String,
+        createdAt: Long,
+        id: String? = null,
+        mimeType: String? = null
+    ): ImageRef =
+        withContext(Dispatchers.IO) {
+            val parsed = parseDataUrl(dataUrl, mimeType)
+            val target = newImageFile(
+                context = context,
+                id = id,
+                extension = extensionForMimeType(parsed.mimeType)
+            )
+            target.outputStream().use { output ->
+                output.write(parsed.bytes)
+            }
+            target.toImageRef(
+                context = context,
+                kind = kind,
+                createdAt = createdAt,
+                id = id ?: UUID.randomUUID().toString(),
+                mimeType = parsed.mimeType
+            )
+        }
 
     suspend fun readImageDataUrl(context: Context, imageRef: ImageRef): String =
         withContext(Dispatchers.IO) {
@@ -46,24 +74,58 @@ object ImageFileStore {
             "data:$mimeType;base64,${Base64.encodeToString(bytes, Base64.NO_WRAP)}"
         }
 
-    private fun newImageFile(context: Context): File {
+    private fun newImageFile(
+        context: Context,
+        id: String? = null,
+        extension: String = "jpg"
+    ): File {
         val dir = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES), "wrongbook")
         if (!dir.exists()) dir.mkdirs()
-        return File(dir, "question_${System.currentTimeMillis()}_${UUID.randomUUID()}.jpg")
+        val normalizedId = (id ?: UUID.randomUUID().toString()).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+        return File(dir, "image_${normalizedId}_${System.currentTimeMillis()}.$extension")
     }
 
-    private fun File.toImageRef(context: Context, kind: String): ImageRef {
+    private fun File.toImageRef(
+        context: Context,
+        kind: String,
+        createdAt: Long = System.currentTimeMillis(),
+        id: String = UUID.randomUUID().toString(),
+        mimeType: String? = null
+    ): ImageRef {
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}$AUTHORITY_SUFFIX",
             this
         )
         return ImageRef(
-            id = UUID.randomUUID().toString(),
+            id = id,
             storage = "file",
             kind = kind,
-            createdAt = System.currentTimeMillis(),
+            createdAt = createdAt,
+            mimeType = mimeType,
             uri = uri.toString()
         )
     }
+
+    private fun parseDataUrl(dataUrl: String, fallbackMimeType: String?): ParsedDataUrl {
+        val match = dataUrlPattern.matchEntire(dataUrl.trim()) ?: error("无效的图片 dataUrl")
+        val parsedMimeType = fallbackMimeType ?: match.groupValues[1]
+        val bytes = Base64.decode(match.groupValues[2], Base64.DEFAULT)
+        return ParsedDataUrl(
+            mimeType = parsedMimeType,
+            bytes = bytes
+        )
+    }
+
+    private fun extensionForMimeType(mimeType: String): String = when (mimeType.lowercase()) {
+        "image/png" -> "png"
+        "image/webp" -> "webp"
+        "image/jpeg", "image/jpg" -> "jpg"
+        else -> "bin"
+    }
+
+    private data class ParsedDataUrl(
+        val mimeType: String,
+        val bytes: ByteArray
+    )
 }

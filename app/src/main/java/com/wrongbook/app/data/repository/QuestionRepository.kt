@@ -64,6 +64,10 @@ class QuestionRepository(private val dao: QuestionDao) {
     }
 
     suspend fun saveSyncedQuestions(questions: List<Question>) = mutationMutex.withLock {
+        if (questions.isEmpty()) {
+            return@withLock
+        }
+
         questions.forEach { question ->
             dao.insert(QuestionMapper.domainToEntity(question.copy(syncStatus = SyncStatus.SYNCED)))
         }
@@ -97,6 +101,8 @@ class QuestionRepository(private val dao: QuestionDao) {
                 current.errorCause != errorCause ||
                 current.tags != tags ||
                 current.imageRefs != imageRefs
+            val notesChanged = current.notes != notes
+            val noteImagesChanged = current.noteImageRefs != noteImageRefs
 
         current.copy(
             title = title,
@@ -112,6 +118,8 @@ class QuestionRepository(private val dao: QuestionDao) {
             tags = tags,
             imageRefs = imageRefs,
             noteImageRefs = noteImageRefs,
+            notesUpdatedAt = if (notesChanged) now else current.notesUpdatedAt,
+            noteImagesUpdatedAt = if (noteImagesChanged) now else current.noteImagesUpdatedAt,
             contentUpdatedAt = if (contentChanged) now else current.contentUpdatedAt
         )
     }
@@ -151,16 +159,19 @@ class QuestionRepository(private val dao: QuestionDao) {
         )
     }
 
-    suspend fun saveNotes(id: String, notes: String): Boolean = mutate(id) { current, _ ->
+    suspend fun saveNotes(id: String, notes: String): Boolean = mutate(id) { current, now ->
         current.copy(
-            notes = notes
+            notes = notes,
+            notesUpdatedAt = if (current.notes != notes) now else current.notesUpdatedAt
         )
     }
 
     suspend fun saveNoteImages(id: String, noteImageRefs: List<ImageRef>): Boolean =
-        mutate(id) { current, _ ->
+        mutate(id) { current, now ->
             current.copy(
-                noteImageRefs = noteImageRefs
+                noteImageRefs = noteImageRefs,
+                noteImagesUpdatedAt =
+                    if (current.noteImageRefs != noteImageRefs) now else current.noteImagesUpdatedAt
             )
         }
 

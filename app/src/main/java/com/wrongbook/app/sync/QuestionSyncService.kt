@@ -66,12 +66,26 @@ class QuestionSyncService(
 
         val root = runCatching { JsonParser.parseString(body).asJsonObject }
             .getOrElse { error("同步接口返回了无效 JSON") }
-        val remoteRecords = root.getAsJsonArray("records")
-            ?: error("同步接口未返回 records")
+        if (!root.has("records")) {
+            error("同步接口未返回 records")
+        }
 
-        remoteRecords.mapNotNull { element ->
-            runCatching { fromSyncJson(element.asJsonObject).copy(syncStatus = SyncStatus.SYNCED) }
-                .getOrNull()
+        val remoteRecordsElement = root.get("records")
+        if (!remoteRecordsElement.isJsonArray) {
+            error("同步接口 records 不是数组")
+        }
+
+        val remoteRecords = remoteRecordsElement.asJsonArray
+        if (remoteRecords.size() == 0 && localQuestions.isNotEmpty()) {
+            error("同步异常：服务端返回空数据")
+        }
+
+        buildList {
+            remoteRecords.forEach { element ->
+                runCatching {
+                    fromSyncJson(element.asJsonObject).copy(syncStatus = SyncStatus.SYNCED)
+                }.getOrNull()?.let(::add)
+            }
         }
     }
 
@@ -99,6 +113,7 @@ class QuestionSyncService(
             question.deletedAt?.let { addProperty("deletedAt", iso(it)) }
             addProperty("syncStatus", question.syncStatus.name.lowercase())
             addProperty("notes", question.notes)
+            question.notesUpdatedAt?.let { addProperty("notesUpdatedAt", iso(it)) }
             addProperty("errorCause", question.errorCause)
             add("tags", stringArray(question.tags))
             addProperty("masteryLevel", question.masteryLevel)
@@ -106,6 +121,8 @@ class QuestionSyncService(
             question.lastReviewedAt?.let { addProperty("lastReviewedAt", iso(it)) }
             question.nextReviewAt?.let { addProperty("nextReviewAt", iso(it)) }
             addProperty("reviewStatus", question.reviewStatus.name.lowercase())
+            question.noteImagesUpdatedAt?.let { addProperty("noteImagesUpdatedAt", iso(it)) }
+            question.reviewUpdatedAt?.let { addProperty("reviewUpdatedAt", iso(it)) }
             question.analysis?.let { add("analysis", analysisJson(it)) }
             question.analysisContentUpdatedAt?.let {
                 addProperty("analysisContentUpdatedAt", iso(it))
@@ -147,7 +164,7 @@ class QuestionSyncService(
         return array
     }
 
-    private fun fromSyncJson(json: JsonObject): Question {
+    private suspend fun fromSyncJson(json: JsonObject): Question {
         val now = System.currentTimeMillis()
         val createdAt = millis(json, "createdAt", now)
         val updatedAt = millis(json, "updatedAt", createdAt)
@@ -158,8 +175,22 @@ class QuestionSyncService(
         val parsedHint = nullableString(json, "hint")
         val parsedHintUpdatedAt = nullableMillis(json, "hintUpdatedAt")
         val parsedFollowUps = followUps(json.getAsJsonArray("followUpChats"))
+        val parsedImageRefs = imageRefs(
+            array = json.getAsJsonArray("imageRefs"),
+            kind = "question",
+            legacySources = listOfNotNull(nullableString(json, "image"))
+        )
+        val parsedNoteImageRefs = imageRefs(
+            array = json.getAsJsonArray("noteImageRefs"),
+            kind = "note",
+            legacySources = stringList(json.getAsJsonArray("noteImages"))
+        )
+        val parsedNotes = string(json, "notes")
+        val reviewCount = int(json, "reviewCount", 0)
+        val lastReviewedAt = nullableMillis(json, "lastReviewedAt")
 
-        return Question(
+        return materializeRemoteImagesToLocalFiles(
+            Question(
             id = string(json, "id").ifBlank { UUID.randomUUID().toString() },
             title = string(json, "title").ifBlank { "未命名错题" },
             category = SubjectCatalog.normalize(string(json, "category")),
@@ -169,7 +200,7 @@ class QuestionSyncService(
             questionText = string(json, "questionText"),
             userAnswer = string(json, "userAnswer"),
             correctAnswer = string(json, "correctAnswer"),
-            notes = string(json, "notes"),
+            notes = parsedNotes,
             errorCause = string(json, "errorCause"),
             tags = stringList(json.getAsJsonArray("tags")),
             masteryLevel = int(json, "masteryLevel", 0),
@@ -179,10 +210,23 @@ class QuestionSyncService(
             deletedAt = nullableMillis(json, "deletedAt"),
             syncStatus = SyncStatus.SYNCED,
             contentUpdatedAt = contentUpdatedAt,
-            reviewCount = int(json, "reviewCount", 0),
-            lastReviewedAt = nullableMillis(json, "lastReviewedAt"),
+            reviewCount = reviewCount,
+            lastReviewedAt = lastReviewedAt,
             nextReviewAt = nullableMillis(json, "nextReviewAt"),
             reviewStatus = reviewStatus(string(json, "reviewStatus")),
+            notesUpdatedAt =
+                nullableMillis(json, "notesUpdatedAt")
+                    ?: parsedNotes.takeIf { it.isNotBlank() }?.let { updatedAt },
+            noteImagesUpdatedAt =
+                nullableMillis(json, "noteImagesUpdatedAt")
+                    ?: parsedNoteImageRefs.takeIf { it.isNotEmpty() }?.let { updatedAt },
+            reviewUpdatedAt =
+                nullableMillis(json, "reviewUpdatedAt")
+                    ?: if (reviewCount > 0 || lastReviewedAt != null) {
+                        lastReviewedAt ?: updatedAt
+                    } else {
+                        null
+                    },
             analysis = parsedAnalysis,
             analysisContentUpdatedAt =
                 nullableMillis(json, "analysisContentUpdatedAt")
@@ -205,16 +249,40 @@ class QuestionSyncService(
                 nullableMillis(json, "followUpContentUpdatedAt")
                     ?: parsedFollowUps.lastOrNull()?.createdAt
                     ?: parsedFollowUps.takeIf { it.isNotEmpty() }?.let { contentUpdatedAt },
-            imageRefs = imageRefs(
-                array = json.getAsJsonArray("imageRefs"),
-                kind = "question",
-                legacySources = listOfNotNull(nullableString(json, "image"))
-            ),
-            noteImageRefs = imageRefs(
-                array = json.getAsJsonArray("noteImageRefs"),
-                kind = "note",
-                legacySources = stringList(json.getAsJsonArray("noteImages"))
-            )
+            imageRefs = parsedImageRefs,
+            noteImageRefs = parsedNoteImageRefs
+        ))
+    }
+
+    private suspend fun materializeRemoteImagesToLocalFiles(question: Question): Question {
+        val localImageRefs = question.imageRefs.map { ref ->
+            materializeRemoteImageRefForLocalStorage(ref, "question")
+        }
+        val localNoteImageRefs = question.noteImageRefs.map { ref ->
+            materializeRemoteImageRefForLocalStorage(ref, "note")
+        }
+
+        return question.copy(
+            imageRefs = localImageRefs,
+            noteImageRefs = localNoteImageRefs
+        )
+    }
+
+    private suspend fun materializeRemoteImageRefForLocalStorage(
+        ref: ImageRef,
+        fallbackKind: String
+    ): ImageRef {
+        if (ref.storage != "inline" || ref.dataUrl.isNullOrBlank()) {
+            return ref
+        }
+
+        return ImageFileStore.importDataUrl(
+            context = context,
+            dataUrl = ref.dataUrl,
+            kind = ref.kind.ifBlank { fallbackKind },
+            createdAt = ref.createdAt,
+            id = ref.id,
+            mimeType = ref.mimeType
         )
     }
 

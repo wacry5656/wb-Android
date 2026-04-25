@@ -28,6 +28,9 @@ data class QuestionEntity(
     val lastReviewedAt: Long?,
     val nextReviewAt: Long?,
     val reviewStatus: String,
+    val notesUpdatedAt: Long?,
+    val noteImagesUpdatedAt: Long?,
+    val reviewUpdatedAt: Long?,
     val analysis: String?,           // JSON serialized QuestionAnalysis
     val analysisContentUpdatedAt: Long?,
     val detailedExplanation: String?,

@@ -7,7 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [QuestionEntity::class], version = 4, exportSchema = false)
+@Database(entities = [QuestionEntity::class], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun questionDao(): QuestionDao
 
@@ -62,6 +62,58 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "questions", "questionText")) {
+                    db.execSQL("ALTER TABLE questions ADD COLUMN questionText TEXT NOT NULL DEFAULT ''")
+                }
+                if (!hasColumn(db, "questions", "userAnswer")) {
+                    db.execSQL("ALTER TABLE questions ADD COLUMN userAnswer TEXT NOT NULL DEFAULT ''")
+                }
+                if (!hasColumn(db, "questions", "correctAnswer")) {
+                    db.execSQL("ALTER TABLE questions ADD COLUMN correctAnswer TEXT NOT NULL DEFAULT ''")
+                }
+                if (!hasColumn(db, "questions", "notesUpdatedAt")) {
+                    db.execSQL("ALTER TABLE questions ADD COLUMN notesUpdatedAt INTEGER")
+                }
+                if (!hasColumn(db, "questions", "noteImagesUpdatedAt")) {
+                    db.execSQL("ALTER TABLE questions ADD COLUMN noteImagesUpdatedAt INTEGER")
+                }
+                if (!hasColumn(db, "questions", "reviewUpdatedAt")) {
+                    db.execSQL("ALTER TABLE questions ADD COLUMN reviewUpdatedAt INTEGER")
+                }
+
+                db.execSQL("UPDATE questions SET questionText = COALESCE(questionText, '')")
+                db.execSQL("UPDATE questions SET userAnswer = COALESCE(userAnswer, '')")
+                db.execSQL("UPDATE questions SET correctAnswer = COALESCE(correctAnswer, '')")
+                db.execSQL(
+                    "UPDATE questions SET notesUpdatedAt = updatedAt WHERE notesUpdatedAt IS NULL AND notes IS NOT NULL AND TRIM(notes) != ''"
+                )
+                db.execSQL(
+                    "UPDATE questions SET noteImagesUpdatedAt = updatedAt WHERE noteImagesUpdatedAt IS NULL AND noteImageRefs IS NOT NULL AND TRIM(noteImageRefs) != '' AND noteImageRefs != '[]'"
+                )
+                db.execSQL(
+                    "UPDATE questions SET reviewUpdatedAt = COALESCE(lastReviewedAt, updatedAt) WHERE reviewUpdatedAt IS NULL AND (reviewCount > 0 OR lastReviewedAt IS NOT NULL)"
+                )
+            }
+        }
+
+        private fun hasColumn(
+            db: SupportSQLiteDatabase,
+            tableName: String,
+            columnName: String
+        ): Boolean {
+            db.query("PRAGMA table_info($tableName)").use { cursor ->
+                val nameIndex = cursor.getColumnIndex("name")
+                while (cursor.moveToNext()) {
+                    if (nameIndex >= 0 && cursor.getString(nameIndex) == columnName) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -71,7 +123,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "wrongbook.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance
