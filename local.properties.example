@@ -1,0 +1,9 @@
+# Copy this file to local.properties and fill in your local secrets.
+# Do not commit local.properties.
+
+DASHSCOPE_API_KEY=
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_MODEL=qwen3.6-plus
+SYNC_API_URL=
+SYNC_TOKEN=
+SYNC_DEVICE_ID=android-main
