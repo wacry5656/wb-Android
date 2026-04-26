@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.wrongbook.app.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -77,7 +78,9 @@ class DashScopeClient(
             .post(requestBody.toRequestBody(JSON_MEDIA))
             .build()
 
-        Log.d(TAG, "Request -> $url model=$model messages=${messages.size}")
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Request -> $url model=$model messages=${messages.size}")
+        }
 
         val response = try {
             httpClient.newCall(request).execute()
@@ -88,7 +91,9 @@ class DashScopeClient(
         val body = response.body?.string() ?: ""
 
         if (!response.isSuccessful) {
-            Log.e(TAG, "HTTP ${response.code}: $body")
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "HTTP ${response.code}: $body")
+            }
             val errorMsg = try {
                 val errorJson = JsonParser.parseString(body).asJsonObject
                 errorJson.getAsJsonObject("error")?.get("message")?.asString
@@ -109,12 +114,16 @@ class DashScopeClient(
                 ?: throw AiException("AI 返回格式异常: 缺少 content")
             val finishReason = choice.get("finish_reason")?.asString
 
-            Log.d(TAG, "Response OK, content length=${content.length}, finish=$finishReason")
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Response OK, content length=${content.length}, finish=$finishReason")
+            }
             ChatResult(content = content, finishReason = finishReason)
         } catch (e: AiException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Parse error: $body", e)
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "Parse error: $body", e)
+            }
             throw AiException("AI 返回解析失败: ${e.message}", e)
         }
     }
