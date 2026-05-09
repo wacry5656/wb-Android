@@ -100,7 +100,13 @@ fun DetailScreen(
         val imageRef = pendingNoteCameraImage
         pendingNoteCameraImage = null
         if (success && imageRef != null) {
-            viewModel.addNoteImageRef(imageRef)
+            scope.launch {
+                try {
+                    viewModel.addNoteImageRef(ImageFileStore.ensureImageIsSupported(context, imageRef))
+                } catch (e: Exception) {
+                    viewModel.showMessage("图片笔记导入失败: ${e.message}")
+                }
+            }
         } else {
             viewModel.showMessage("拍照已取消或保存失败")
         }

@@ -83,7 +83,13 @@ fun AddEditScreen(
         val imageRef = pendingMainCameraImage
         pendingMainCameraImage = null
         if (success && imageRef != null) {
-            viewModel.addImageRef(imageRef)
+            scope.launch {
+                try {
+                    viewModel.addImageRef(ImageFileStore.ensureImageIsSupported(context, imageRef))
+                } catch (e: Exception) {
+                    viewModel.showError("图片导入失败: ${e.message}")
+                }
+            }
         } else {
             viewModel.showError("拍照已取消或保存失败")
         }
