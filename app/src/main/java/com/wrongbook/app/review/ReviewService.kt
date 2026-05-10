@@ -49,10 +49,10 @@ object ReviewService {
         )
     }
 
-    /** 延后复习（4小时后再提醒） */
+    /** 延后复习（24小时后再提醒） */
     fun postponeReview(question: Question): Question {
         val now = System.currentTimeMillis()
-        val nextReview = now + 4L * 60 * 60 * 1000
+        val nextReview = now + 24L * 60 * 60 * 1000
 
         return question.copy(
             nextReviewAt = nextReview,
