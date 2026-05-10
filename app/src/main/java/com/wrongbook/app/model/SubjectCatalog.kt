@@ -8,6 +8,6 @@ object SubjectCatalog {
 
     fun normalize(value: String): String {
         val trimmed = value.trim()
-        return if (isSupported(trimmed)) trimmed else defaultSubject
+        return if (isSupported(trimmed)) trimmed else trimmed.ifBlank { defaultSubject }
     }
 }

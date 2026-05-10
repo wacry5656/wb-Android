@@ -59,35 +59,36 @@ class QuestionSyncService(
             .build()
 
         val response = httpClient.newCall(request).execute()
-        val body = response.body?.string().orEmpty()
-        if (!response.isSuccessful) {
-            error("同步接口返回错误 ${response.code}: ${body.take(200)}")
-        }
+        return response.use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) {
+                error("同步接口返回错误 ${resp.code}: ${body.take(200)}")
+            }
 
-        val root = runCatching { JsonParser.parseString(body).asJsonObject }
-            .getOrElse { error("同步接口返回了无效 JSON") }
-        if (!root.has("records")) {
-            error("同步接口未返回 records")
-        }
+            val root = runCatching { JsonParser.parseString(body).asJsonObject }
+                .getOrElse { error("同步接口返回了无效 JSON") }
+            if (!root.has("records")) {
+                error("同步接口未返回 records")
+            }
 
-        val remoteRecordsElement = root.get("records")
-        if (!remoteRecordsElement.isJsonArray) {
-            error("同步接口 records 不是数组")
-        }
+            val remoteRecordsElement = root.get("records")
+            if (!remoteRecordsElement.isJsonArray) {
+                error("同步接口 records 不是数组")
+            }
 
-        val remoteRecords = remoteRecordsElement.asJsonArray
-        if (remoteRecords.size() == 0 && localQuestions.isNotEmpty()) {
-            error("同步异常：服务端返回空数据")
-        }
+            val remoteRecords = remoteRecordsElement.asJsonArray
+            if (remoteRecords.size() == 0 && localQuestions.isNotEmpty()) {
+                error("同步异常：服务端返回空数据")
+            }
 
-        buildList {
-            remoteRecords.forEach { element ->
-                runCatching {
-                    fromSyncJson(element.asJsonObject).copy(syncStatus = SyncStatus.SYNCED)
-                }.getOrNull()?.let(::add)
+            buildList {
+                remoteRecords.forEach { element ->
+                    runCatching {
+                        fromSyncJson(element.asJsonObject).copy(syncStatus = SyncStatus.SYNCED)
+                    }.getOrNull()?.let(::add)
+                }
             }
         }
-    }
 
     private suspend fun toSyncJson(question: Question): JsonObject {
         val imageRefs = materializeImageRefs(question.imageRefs, "question")

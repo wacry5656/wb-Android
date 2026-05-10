@@ -20,7 +20,8 @@ data class ReviewUiState(
     val isCompleted: Boolean = false,
     val showAnswer: Boolean = false,
     val totalCount: Int = 0,
-    val sortOrder: ReviewSortOrder = ReviewSortOrder.DUE_FIRST
+    val sortOrder: ReviewSortOrder = ReviewSortOrder.DUE_FIRST,
+    val message: String? = null
 )
 
 enum class ReviewSortOrder(val label: String) {
@@ -55,12 +56,14 @@ class ReviewViewModel(
         }
     }
 
-    fun completeReview(quality: Int = 2) {
+fun completeReview(quality: Int = 2) {
         val state = _uiState.value
         val question = state.reviewQuestions.getOrNull(state.currentIndex) ?: return
         viewModelScope.launch {
             if (repository.completeReview(question.id, quality)) {
                 removeCurrentQuestion(question.id)
+            } else {
+                _uiState.update { it.copy(message = "题目已不存在或已删除") }
             }
         }
     }
@@ -71,6 +74,8 @@ class ReviewViewModel(
         viewModelScope.launch {
             if (repository.postponeReview(question.id)) {
                 removeCurrentQuestion(question.id)
+            } else {
+                _uiState.update { it.copy(message = "题目已不存在或已删除") }
             }
         }
     }
@@ -79,7 +84,7 @@ class ReviewViewModel(
         _uiState.update { it.copy(showAnswer = !it.showAnswer) }
     }
 
-    fun onSortOrderChange(order: ReviewSortOrder) {
+fun onSortOrderChange(order: ReviewSortOrder) {
         _uiState.update {
             it.copy(
                 sortOrder = order,
@@ -88,6 +93,10 @@ class ReviewViewModel(
                 showAnswer = false
             )
         }
+    }
+
+    fun clearMessage() {
+        _uiState.update { it.copy(message = null) }
     }
 
     fun previousQuestion() {

@@ -68,9 +68,7 @@ class QuestionRepository(private val dao: QuestionDao) {
             return@withLock
         }
 
-        questions.forEach { question ->
-            dao.insert(QuestionMapper.domainToEntity(question.copy(syncStatus = SyncStatus.SYNCED)))
-        }
+        dao.insertAll(questions.map { QuestionMapper.domainToEntity(it.copy(syncStatus = SyncStatus.SYNCED)) })
     }
 
     suspend fun updateQuestionContent(

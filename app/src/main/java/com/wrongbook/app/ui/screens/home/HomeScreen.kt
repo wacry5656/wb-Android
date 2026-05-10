@@ -165,7 +165,7 @@ fun HomeScreen(
                         OutlinedCard(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { navController.navigate("question_list") }
+                                .clickable { navController.navigate(Screen.QuestionList.route) }
                         ) {
                             Column(
                                 modifier = Modifier
@@ -211,7 +211,7 @@ fun HomeScreen(
                             items(uiState.categories) { category ->
                                 FilterChip(
                                     onClick = {
-                                        navController.navigate("question_list?category=$category")
+                                        navController.navigate("${Screen.QuestionList.route}?category=$category")
                                     },
                                     label = { Text(category) },
                                     selected = false

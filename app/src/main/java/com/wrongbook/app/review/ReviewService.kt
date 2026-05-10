@@ -23,7 +23,7 @@ object ReviewService {
     fun completeReview(question: Question, quality: Int = 2): Question {
         val now = System.currentTimeMillis()
         val normalizedQuality = quality.coerceIn(0, 3)
-        val newCount = if (normalizedQuality == 0) question.reviewCount else question.reviewCount + 1
+        val newCount = question.reviewCount + 1
         val baseIntervalDays = getNextIntervalDays(newCount)
         val nextReview = when (normalizedQuality) {
             0 -> now + 10L * 60 * 1000
