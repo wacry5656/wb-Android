@@ -9,6 +9,7 @@ import com.wrongbook.app.data.repository.QuestionRepository
 import com.wrongbook.app.model.FollowUpChat
 import com.wrongbook.app.model.ImageRef
 import com.wrongbook.app.model.Question
+import com.wrongbook.app.utils.ImageFileStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -284,7 +285,12 @@ class DetailViewModel(
 
     fun softDelete() {
         viewModelScope.launch {
+            val question = (questionState.value as? DetailQuestionState.Active)?.question
             val deleted = repository.softDelete(questionId)
+            if (deleted && question != null) {
+                val context = WrongBookApp.instance.applicationContext
+                ImageFileStore.deleteImageFiles(context, question.imageRefs + question.noteImageRefs)
+            }
             _localState.update {
                 it.copy(
                     isDeleted = deleted,

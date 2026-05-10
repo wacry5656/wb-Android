@@ -229,4 +229,20 @@ fun getFileFromUri(context: Context, uri: String): File? {
         val mimeType: String,
         val bytes: ByteArray
     )
+
+    fun deleteImageFiles(
+        context: Context,
+        imageRefs: List<ImageRef>
+    ) {
+        val imageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+            ?.let { File(it, "wrongbook") } ?: return
+        imageRefs.forEach { ref ->
+            val uriStr = ref.uri ?: return@forEach
+            val path = getRealPathFromUri(context, Uri.parse(uriStr)) ?: return@forEach
+            val file = File(path)
+            if (file.exists() && file.parentFile?.absolutePath == imageDir.absolutePath) {
+                file.delete()
+            }
+        }
+    }
 }

@@ -59,7 +59,7 @@ class QuestionSyncService(
             .build()
 
         val response = httpClient.newCall(request).execute()
-        return response.use { resp ->
+        response.use { resp ->
             val body = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
                 error("同步接口返回错误 ${resp.code}: ${body.take(200)}")
@@ -85,10 +85,13 @@ class QuestionSyncService(
                 remoteRecords.forEach { element ->
                     runCatching {
                         fromSyncJson(element.asJsonObject).copy(syncStatus = SyncStatus.SYNCED)
+                    }.onFailure { e ->
+                        android.util.Log.w("SyncService", "Failed to parse synced record: ${e.message}", e)
                     }.getOrNull()?.let(::add)
                 }
             }
         }
+    }
 
     private suspend fun toSyncJson(question: Question): JsonObject {
         val imageRefs = materializeImageRefs(question.imageRefs, "question")

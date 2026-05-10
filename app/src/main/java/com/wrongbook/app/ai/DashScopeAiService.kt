@@ -255,7 +255,7 @@ class DashScopeAiService(
             .replace("^\\s{0,3}#{1,6}\\s*".toRegex(RegexOption.MULTILINE), "")
             .replace("\\*\\*(.*?)\\*\\*".toRegex(), "$1")
             .replace("__(.*?)__".toRegex(), "$1")
-            .replace("*", "")
+            .replace("(?<!\\w)\\*(?!\\w)".toRegex(), "")
             .replace("^\\s*>\\s?".toRegex(RegexOption.MULTILINE), "")
         val fillerPattern = "^\\s*(你好|同学你好|我们来分析(?:一下)?这道题|下面(?:我们)?来分析这道题|我们来看(?:一下)?这道题|下面给出(?:详细)?讲解|接下来(?:我们)?来分析|下面开始讲解)[：:，,\\s]*$".toRegex(RegexOption.MULTILINE)
         val lines = cleaned.lines()

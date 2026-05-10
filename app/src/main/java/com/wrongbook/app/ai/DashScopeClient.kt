@@ -59,7 +59,7 @@ class DashScopeClient(
 
         val url = "${baseUrl.trimEnd('/')}/chat/completions"
 
-val bodyFields = mutableMapOf<String, Any>(
+        val bodyFields = mutableMapOf<String, Any>(
             "model" to model,
             "messages" to messages.map { mapOf("role" to it.role, "content" to it.content) },
             "temperature" to temperature
@@ -90,7 +90,7 @@ val response = try {
             throw AiException("网络连接失败，请检查网络设置: ${e.message}", e)
         }
 
-        return response.use { resp ->
+        response.use { resp ->
             val body = resp.body?.string() ?: ""
 
             if (!resp.isSuccessful) {
