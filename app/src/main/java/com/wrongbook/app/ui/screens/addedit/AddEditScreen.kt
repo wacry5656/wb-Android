@@ -75,6 +75,7 @@ fun AddEditScreen(
                 importAndAddImage(
                     uri = it,
                     context = context,
+                    kind = "question",
                     onAdd = viewModel::addImageRef,
                     onError = viewModel::showError
                 )
@@ -108,6 +109,7 @@ fun AddEditScreen(
                 importAndAddImage(
                     uri = it,
                     context = context,
+                    kind = "note",
                     onAdd = viewModel::addNoteImageRef,
                     onError = viewModel::showError
                 )
@@ -431,11 +433,12 @@ fun AddEditScreen(
 suspend fun importAndAddImage(
     uri: Uri,
     context: android.content.Context,
+    kind: String,
     onAdd: (ImageRef) -> Unit,
     onError: (String) -> Unit
 ) {
     try {
-        onAdd(ImageFileStore.importImage(context, uri, kind = "question"))
+        onAdd(ImageFileStore.importImage(context, uri, kind = kind))
     } catch (e: Exception) {
         onError("图片导入失败: ${e.message}")
     }
