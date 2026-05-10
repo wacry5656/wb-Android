@@ -77,14 +77,8 @@ class HomeViewModel(
                     it.copy(isSyncing = false, message = "同步完成：${remote.size} 题")
                 }
             } catch (e: Exception) {
-                if (e.message == "同步异常：服务端返回空数据") {
-                    _syncState.update {
-                        it.copy(isSyncing = false, message = "同步异常：服务端返回空数据")
-                    }
-                    return@launch
-                }
                 _syncState.update {
-                    it.copy(isSyncing = false, message = "同步失败，请检查 VPS 配置")
+                    it.copy(isSyncing = false, message = "同步失败：${e.message?.take(80) ?: "未知错误"}")
                 }
             }
         }

@@ -146,8 +146,8 @@ class AddEditViewModel(
             _uiState.update { it.copy(errorMessage = "标题不能为空") }
             return
         }
-        if (state.imageRefs.isEmpty()) {
-            _uiState.update { it.copy(errorMessage = "请先添加题目图片") }
+        if (state.imageRefs.isEmpty() && state.questionText.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "请添加题目图片或填写题目内容") }
             return
         }
         val category = SubjectCatalog.normalize(state.category)
@@ -210,7 +210,9 @@ class AddEditViewModel(
                         reviewStatus = reviewStatus,
                         syncStatus = SyncStatus.PENDING,
                         imageRefs = state.imageRefs,
-                        noteImageRefs = state.noteImageRefs
+                        noteImageRefs = state.noteImageRefs,
+                        notesUpdatedAt = if (state.notes.isNotBlank()) now else null,
+                        noteImagesUpdatedAt = if (state.noteImageRefs.isNotEmpty()) now else null
                     )
                     repository.save(question)
                     true

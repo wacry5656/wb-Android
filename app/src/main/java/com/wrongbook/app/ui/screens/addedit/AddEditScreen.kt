@@ -97,7 +97,13 @@ fun AddEditScreen(
                 }
             }
         } else {
-            viewModel.showError("拍照已取消或保存失败")
+            imageRef?.uri?.let { uri ->
+                val file = com.wrongbook.app.utils.ImageFileStore.getFileFromUri(context, uri)
+                file?.delete()
+            }
+            if (!success) {
+                viewModel.showError("拍照已取消或保存失败")
+            }
         }
     }
 
@@ -131,7 +137,13 @@ fun AddEditScreen(
                 }
             }
         } else {
-            viewModel.showError("拍照已取消或保存失败")
+            imageRef?.uri?.let { uri ->
+                val file = com.wrongbook.app.utils.ImageFileStore.getFileFromUri(context, uri)
+                file?.delete()
+            }
+            if (!success) {
+                viewModel.showError("拍照已取消或保存失败")
+            }
         }
     }
 
@@ -417,7 +429,7 @@ fun AddEditScreen(
 
                     item {
                         Text(
-                            text = "AI 将根据题目图片和补充信息生成分析。题目文字可选填写，用于提高分析准确度。",
+                            text = if (uiState.imageRefs.isEmpty()) "建议添加题目图片，AI 分析将根据图片和文字内容生成更准确的分析。" else "AI 将根据题目图片和补充信息生成分析。题目文字可选填写，用于提高分析准确度。",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

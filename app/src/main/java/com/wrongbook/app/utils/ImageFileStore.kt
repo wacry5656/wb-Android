@@ -199,6 +199,32 @@ object ImageFileStore {
         else -> "bin"
     }
 
+fun getFileFromUri(context: Context, uri: String): File? {
+        return try {
+            val parsed = Uri.parse(uri)
+            val filePath = getRealPathFromUri(context, parsed)
+            if (filePath != null) {
+                val file = File(filePath)
+                if (file.exists()) file else null
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun getRealPathFromUri(context: Context, uri: Uri): String? {
+        if (android.content.ContentResolver.SCHEME_FILE == uri.scheme) {
+            return uri.path
+        }
+        val externalFilesDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+        val pathSegments = uri.pathSegments
+        val relativePath = pathSegments.lastOrNull() ?: return null
+        val fullPath = "${externalFilesDir?.absolutePath}/wrongbook/$relativePath"
+        return if (File(fullPath).exists()) fullPath else null
+    }
+
     private data class ParsedDataUrl(
         val mimeType: String,
         val bytes: ByteArray

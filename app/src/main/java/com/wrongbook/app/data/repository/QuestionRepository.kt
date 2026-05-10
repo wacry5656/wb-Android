@@ -56,7 +56,7 @@ class QuestionRepository(private val dao: QuestionDao) {
         dao.getRecentlyAdded(limit).map { list -> list.map(QuestionMapper::entityToDomain) }
 
     fun getAllCategories(): Flow<List<String>> =
-        flowOf(SubjectCatalog.subjects)
+        dao.getAllCategories()
 
     suspend fun save(question: Question) {
         val entity = QuestionMapper.domainToEntity(question)

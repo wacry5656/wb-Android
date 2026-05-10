@@ -94,7 +94,7 @@ fun DetailScreen(
         }
     }
 
-    val noteCameraLauncher = rememberLauncherForActivityResult(
+val noteCameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         val imageRef = pendingNoteCameraImage
@@ -108,7 +108,12 @@ fun DetailScreen(
                 }
             }
         } else {
-            viewModel.showMessage("拍照已取消或保存失败")
+            imageRef?.uri?.let { uri ->
+                ImageFileStore.getFileFromUri(context, uri)?.delete()
+            }
+            if (!success) {
+                viewModel.showMessage("拍照已取消或保存失败")
+            }
         }
     }
 
@@ -479,12 +484,17 @@ private fun AiAnalysisSection(
                     Text("• $it", style = MaterialTheme.typography.bodySmall)
                 }
             }
-            if (analysis.notices.isNotEmpty()) {
+if (analysis.notices.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
                 Text("注意事项：", style = MaterialTheme.typography.labelLarge)
                 analysis.notices.forEach {
                     Text("• $it", style = MaterialTheme.typography.bodySmall)
                 }
+            }
+            if (analysis.studyAdvice.isNotEmpty()) {
+                Spacer(Modifier.height(6.dp))
+                Text("学习建议：", style = MaterialTheme.typography.labelLarge)
+                Text(analysis.studyAdvice, style = MaterialTheme.typography.bodySmall)
             }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onGenerate) {

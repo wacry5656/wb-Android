@@ -14,7 +14,7 @@ object SeedData {
         val twoDaysAgo = now - 2 * 86_400_000L
 
         return listOf(
-            Question(
+Question(
                 id = UUID.randomUUID().toString(),
                 title = "二次函数求最值问题",
                 category = "数学",
@@ -22,11 +22,14 @@ object SeedData {
                 userAnswer = "最小值为 0，最大值为 8",
                 correctAnswer = "f(x) = (x-2)² - 1\n最小值：f(2) = -1\n最大值：f(5) = 8",
                 notes = "容易忘记配方法的步骤，需要先确定顶点位置再判断区间内的最值",
+                errorCause = "配方法不熟练，区间端点代入错误",
                 createdAt = twoDaysAgo,
                 updatedAt = twoDaysAgo,
+                contentUpdatedAt = twoDaysAgo,
                 nextReviewAt = now - 3_600_000L,
                 reviewStatus = ReviewStatus.NEW,
-                syncStatus = SyncStatus.PENDING
+                syncStatus = SyncStatus.PENDING,
+                notesUpdatedAt = twoDaysAgo
             ),
             Question(
                 id = UUID.randomUUID().toString(),
@@ -36,11 +39,14 @@ object SeedData {
                 userAnswer = "主要场所是线粒体，产物是氧气和水。",
                 correctAnswer = "光合作用的主要场所是叶绿体，主要产物是有机物和氧气。线粒体主要参与呼吸作用。",
                 notes = "容易把叶绿体和线粒体的功能混淆，复习时要区分光合作用和呼吸作用。",
+                errorCause = "概念混淆，叶绿体和线粒体功能记反",
                 createdAt = yesterday,
                 updatedAt = yesterday,
+                contentUpdatedAt = yesterday,
                 nextReviewAt = now + 86_400_000L,
                 reviewStatus = ReviewStatus.NEW,
-                syncStatus = SyncStatus.PENDING
+                syncStatus = SyncStatus.PENDING,
+                notesUpdatedAt = yesterday
             ),
             Question(
                 id = UUID.randomUUID().toString(),
@@ -50,11 +56,14 @@ object SeedData {
                 userAnswer = "a = 10/2 = 5 m/s",
                 correctAnswer = "由 F = ma 得 a = F/m = 10/2 = 5 m/s²\n注意加速度的单位是 m/s²，不是 m/s。",
                 notes = "计算没问题，但单位写错了。加速度的单位是 m/s² 不是 m/s。",
+                errorCause = "单位粗心写错",
                 createdAt = now - 3_600_000L,
                 updatedAt = now - 3_600_000L,
+                contentUpdatedAt = now - 3_600_000L,
                 nextReviewAt = now - 1_800_000L,
                 reviewStatus = ReviewStatus.NEW,
-                syncStatus = SyncStatus.PENDING
+                syncStatus = SyncStatus.PENDING,
+                notesUpdatedAt = now - 3_600_000L
             ),
             Question(
                 id = UUID.randomUUID().toString(),
@@ -64,11 +73,14 @@ object SeedData {
                 userAnswer = "Fe + O₂ = Fe₃O₄",
                 correctAnswer = "3Fe + 2O₂ →(点燃) Fe₃O₄\n铁在氧气中燃烧生成四氧化三铁。",
                 notes = "配平时先从原子数最多的开始调系数，注意条件标注。",
+                errorCause = "配平方法不熟练，忘记标注反应条件",
                 createdAt = now - 7_200_000L,
                 updatedAt = now - 7_200_000L,
+                contentUpdatedAt = now - 7_200_000L,
                 nextReviewAt = now + 2 * 86_400_000L,
                 reviewStatus = ReviewStatus.NEW,
-                syncStatus = SyncStatus.PENDING
+                syncStatus = SyncStatus.PENDING,
+                notesUpdatedAt = now - 7_200_000L
             )
         ).map(QuestionMapper::domainToEntity)
     }

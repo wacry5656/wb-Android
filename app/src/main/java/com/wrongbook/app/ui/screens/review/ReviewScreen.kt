@@ -113,7 +113,26 @@ fun ReviewScreen(
             }
 
             else -> {
-                // 复习中
+                if (uiState.reviewQuestions.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "没有可复习的题目",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { navController.popBackStack() }) {
+                            Text("返回")
+                        }
+                    }
+                } else {
                 val question = uiState.reviewQuestions[uiState.currentIndex]
 
                 Column(
@@ -340,12 +359,13 @@ fun ReviewScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Text("下一题")
-                                }
-                            }
-                        }
-                    }
+}
+                }
                 }
             }
+        }
+    }
+}
         }
     }
 }

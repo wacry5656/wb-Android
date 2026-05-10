@@ -44,7 +44,7 @@ class QuestionListViewModel(
         if (!category.isNullOrEmpty()) {
             filtered = filtered.filter { it.category == category }
         }
-        if (query.isNotBlank()) {
+if (query.isNotBlank()) {
             filtered = filtered.filter {
                 it.title.contains(query, ignoreCase = true) ||
                     it.category.contains(query, ignoreCase = true) ||
@@ -53,14 +53,16 @@ class QuestionListViewModel(
                     it.source.contains(query, ignoreCase = true) ||
                     it.errorCause.contains(query, ignoreCase = true) ||
                     it.tags.any { tag -> tag.contains(query, ignoreCase = true) } ||
-                    it.questionText?.contains(query, ignoreCase = true) == true ||
-                    it.userAnswer?.contains(query, ignoreCase = true) == true ||
-                    it.correctAnswer?.contains(query, ignoreCase = true) == true ||
-                    it.notes?.contains(query, ignoreCase = true) == true ||
+                    it.questionText.contains(query, ignoreCase = true) ||
+                    it.userAnswer.contains(query, ignoreCase = true) ||
+                    it.correctAnswer.contains(query, ignoreCase = true) ||
+                    it.notes.contains(query, ignoreCase = true) ||
                     it.analysis?.knowledgePoints?.any { point -> point.contains(query, ignoreCase = true) } == true ||
                     it.analysis?.commonMistakes?.any { mistake -> mistake.contains(query, ignoreCase = true) } == true ||
                     it.analysis?.notices?.any { notice -> notice.contains(query, ignoreCase = true) } == true ||
-                    it.analysis?.solutionMethods?.any { method -> method.contains(query, ignoreCase = true) } == true
+                    it.analysis?.solutionMethods?.any { method -> method.contains(query, ignoreCase = true) } == true ||
+                    it.detailedExplanation?.contains(query, ignoreCase = true) == true ||
+                    it.hint?.contains(query, ignoreCase = true) == true
             }
         }
         filtered = when (sort) {
