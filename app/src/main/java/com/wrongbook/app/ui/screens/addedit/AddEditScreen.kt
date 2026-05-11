@@ -3,6 +3,7 @@ package com.wrongbook.app.ui.screens.addedit
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +68,7 @@ fun AddEditScreen(
     val scope = rememberCoroutineScope()
     var pendingMainCameraImage by remember { mutableStateOf<ImageRef?>(null) }
     var pendingNoteCameraImage by remember { mutableStateOf<ImageRef?>(null) }
+    var showMoreOptions by remember { mutableStateOf(false) }
 
     val mainImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -265,69 +268,16 @@ fun AddEditScreen(
                         }
                     }
 
-                    // 年级
-                    item {
-                        OutlinedTextField(
-                            value = uiState.grade,
-                            onValueChange = { viewModel.onGradeChange(it) },
-                            label = { Text("年级") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            placeholder = { Text("例如：高一、高二") },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                    }
-
-                    // 题型
-                    item {
-                        OutlinedTextField(
-                            value = uiState.questionType,
-                            onValueChange = { viewModel.onQuestionTypeChange(it) },
-                            label = { Text("题型") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            placeholder = { Text("例如：选择题、填空题、解答题") },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                    }
-
-                    // 来源
-                    item {
-                        OutlinedTextField(
-                            value = uiState.source,
-                            onValueChange = { viewModel.onSourceChange(it) },
-                            label = { Text("来源") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            placeholder = { Text("例如：期中考试、模拟卷、练习册") },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                    }
-
                     // 题目内容
                     item {
                         OutlinedTextField(
                             value = uiState.questionText,
                             onValueChange = { viewModel.onQuestionTextChange(it) },
-                            label = { Text("题目内容（可选）") },
+                            label = { Text("题目内容") },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3,
                             maxLines = 6,
                             placeholder = { Text("可以手动输入题干文字，方便搜索和 AI 分析") },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                    }
-
-                    // 我的答案
-                    item {
-                        OutlinedTextField(
-                            value = uiState.userAnswer,
-                            onValueChange = { viewModel.onUserAnswerChange(it) },
-                            label = { Text("我的答案（可选）") },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 2,
-                            maxLines = 4,
-                            placeholder = { Text("记录你当时写下的答案") },
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                         )
                     }
@@ -346,31 +296,82 @@ fun AddEditScreen(
                         )
                     }
 
-                    // 错误原因
+                    // 更多选项展开按钮
                     item {
-                        OutlinedTextField(
-                            value = uiState.errorCause,
-                            onValueChange = { viewModel.onErrorCauseChange(it) },
-                            label = { Text("错误原因（可选）") },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 2,
-                            maxLines = 4,
-                            placeholder = { Text("分析做错的原因，方便复习时重点回顾") },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
+                        TextButton(
+                            onClick = { showMoreOptions = !showMoreOptions }
+                        ) {
+                            Text(if (showMoreOptions) "收起更多选项" else "更多选项（年级、题型等）")
+                        }
                     }
 
-                    // 标签
+                    // 更多选项（可折叠）
                     item {
-                        OutlinedTextField(
-                            value = uiState.tagsText,
-                            onValueChange = { viewModel.onTagsTextChange(it) },
-                            label = { Text("标签（可选）") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            placeholder = { Text("用逗号、顿号或换行分隔多个标签") },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
+                        AnimatedVisibility(visible = showMoreOptions) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                OutlinedTextField(
+                                    value = uiState.grade,
+                                    onValueChange = { viewModel.onGradeChange(it) },
+                                    label = { Text("年级") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    placeholder = { Text("例如：高一、高二") },
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.questionType,
+                                    onValueChange = { viewModel.onQuestionTypeChange(it) },
+                                    label = { Text("题型") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    placeholder = { Text("例如：选择题、填空题、解答题") },
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.source,
+                                    onValueChange = { viewModel.onSourceChange(it) },
+                                    label = { Text("来源") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    placeholder = { Text("例如：期中考试、模拟卷、练习册") },
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.userAnswer,
+                                    onValueChange = { viewModel.onUserAnswerChange(it) },
+                                    label = { Text("我的答案（可选）") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 2,
+                                    maxLines = 4,
+                                    placeholder = { Text("记录你当时写下的答案") },
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.errorCause,
+                                    onValueChange = { viewModel.onErrorCauseChange(it) },
+                                    label = { Text("错误原因（可选）") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 2,
+                                    maxLines = 4,
+                                    placeholder = { Text("分析做错的原因，方便复习时重点回顾") },
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                                )
+
+                                OutlinedTextField(
+                                    value = uiState.tagsText,
+                                    onValueChange = { viewModel.onTagsTextChange(it) },
+                                    label = { Text("标签（可选）") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    placeholder = { Text("用逗号、顿号或换行分隔多个标签") },
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                                )
+                            }
+                        }
                     }
 
                     // 笔记
