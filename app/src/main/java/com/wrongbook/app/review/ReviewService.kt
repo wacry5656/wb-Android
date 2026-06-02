@@ -23,7 +23,8 @@ object ReviewService {
     fun completeReview(question: Question, quality: Int = 2): Question {
         val now = System.currentTimeMillis()
         val normalizedQuality = quality.coerceIn(0, 3)
-        val newCount = question.reviewCount + 1
+        // 与 Windows 端一致：答错（quality=0）不推进复习计数与间隔，仅在 10 分钟后重试
+        val newCount = if (normalizedQuality == 0) question.reviewCount else question.reviewCount + 1
         val baseIntervalDays = getNextIntervalDays(newCount)
         val nextReview = when (normalizedQuality) {
             0 -> now + 10L * 60 * 1000

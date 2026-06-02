@@ -335,8 +335,8 @@ class QuestionSyncService(
     ): List<ImageRef> {
         val refs = array?.mapNotNull { element ->
             val item = element.asJsonObject
-            val dataUrl = nullableString(item, "dataUrl")
-            val uri = nullableString(item, "uri")
+            val dataUrl = nullableString(item, "dataUrl")?.takeIf { it.isNotBlank() }
+            val uri = nullableString(item, "uri")?.takeIf { it.isNotBlank() }
             val storage = string(item, "storage").ifBlank {
                 if (dataUrl != null) "inline" else "file"
             }
