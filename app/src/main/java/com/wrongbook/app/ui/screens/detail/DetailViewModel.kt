@@ -9,7 +9,6 @@ import com.wrongbook.app.data.repository.QuestionRepository
 import com.wrongbook.app.model.FollowUpChat
 import com.wrongbook.app.model.ImageRef
 import com.wrongbook.app.model.Question
-import com.wrongbook.app.utils.ImageFileStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -285,12 +284,10 @@ class DetailViewModel(
 
     fun softDelete() {
         viewModelScope.launch {
-            val question = (questionState.value as? DetailQuestionState.Active)?.question
+            // 与 Windows 端保持一致：软删除只写墓碑，保留图片文件与引用。
+            // 立即删掉图片文件会让墓碑同步时读不到图片而上传空 imageRefs，
+            // 在“删后被另一端编辑复活”时会抹掉服务端及所有设备上的图片。
             val deleted = repository.softDelete(questionId)
-            if (deleted && question != null) {
-                val context = WrongBookApp.instance.applicationContext
-                ImageFileStore.deleteImageFiles(context, question.imageRefs + question.noteImageRefs)
-            }
             _localState.update {
                 it.copy(
                     isDeleted = deleted,
