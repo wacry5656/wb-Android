@@ -121,6 +121,15 @@ Scaffold(
                         )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
+                    if (uiState.lastCompletedQuestionId != null) {
+                        OutlinedButton(
+                            onClick = viewModel::undoLastSuccessfulReview,
+                            enabled = !uiState.isUndoing
+                        ) {
+                            Text(if (uiState.isUndoing) "正在撤销…" else "撤销最近一次成功复习")
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     Button(onClick = { navController.popBackStack() }) {
                         Text("返回首页")
                     }
@@ -356,6 +365,15 @@ Scaffold(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("稍后再看")
+                            }
+                            if (uiState.lastCompletedQuestionId != null) {
+                                OutlinedButton(
+                                    onClick = viewModel::undoLastSuccessfulReview,
+                                    enabled = !uiState.isUndoing,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(if (uiState.isUndoing) "正在撤销…" else "撤销上一题的成功复习")
+                                }
                             }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

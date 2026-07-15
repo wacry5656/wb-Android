@@ -4,13 +4,14 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.wrongbook.app.data.local.QuestionEntity
 import com.wrongbook.app.model.FollowUpChat
+import com.wrongbook.app.model.FollowUpChatIds
 import com.wrongbook.app.model.ImageRef
 import com.wrongbook.app.model.Question
 import com.wrongbook.app.model.QuestionAnalysis
 import com.wrongbook.app.model.ReviewStatus
+import com.wrongbook.app.model.ReviewEvent
 import com.wrongbook.app.model.SubjectCatalog
 import com.wrongbook.app.model.SyncStatus
-import java.util.UUID
 
 object QuestionMapper {
 
@@ -27,6 +28,17 @@ object QuestionMapper {
                 gson.fromJson<List<ImageRef>>(it, object : TypeToken<List<ImageRef>>() {}.type)
             }.getOrNull()
         } ?: emptyList()
+        val parsedReviewEvents = entity.reviewEvents?.let {
+            runCatching {
+                gson.fromJson<List<ReviewEvent>>(it, object : TypeToken<List<ReviewEvent>>() {}.type)
+            }.getOrNull()
+        }.orEmpty().ifEmpty {
+            legacyReviewEvents(
+                questionId = entity.id,
+                reviewCount = entity.reviewCount,
+                reviewedAt = entity.lastReviewedAt ?: entity.reviewUpdatedAt ?: entity.updatedAt
+            )
+        }
 
         return Question(
             id = entity.id,
@@ -50,9 +62,12 @@ object QuestionMapper {
             updatedAt = entity.updatedAt,
             deleted = entity.deleted,
             deletedAt = entity.deletedAt,
+            restoredAt = entity.restoredAt,
             syncStatus = runCatching { SyncStatus.valueOf(entity.syncStatus) }.getOrDefault(SyncStatus.PENDING),
             contentUpdatedAt = entity.contentUpdatedAt,
-            reviewCount = entity.reviewCount,
+            imageRefsUpdatedAt = entity.imageRefsUpdatedAt
+                ?: parsedImageRefs.takeIf { it.isNotEmpty() }?.let { entity.contentUpdatedAt },
+            reviewCount = successfulReviewCount(parsedReviewEvents),
             lastReviewedAt = entity.lastReviewedAt,
             nextReviewAt = entity.nextReviewAt,
             reviewStatus = when (entity.reviewStatus.uppercase()) {
@@ -69,6 +84,7 @@ object QuestionMapper {
                 } else {
                     null
                 },
+            reviewEvents = parsedReviewEvents,
             analysis = entity.analysis?.let {
                 runCatching { gson.fromJson(it, QuestionAnalysis::class.java) }.getOrNull()
             },
@@ -79,13 +95,18 @@ object QuestionMapper {
             hint = entity.hint,
             hintUpdatedAt = entity.hintUpdatedAt,
             hintContentUpdatedAt = entity.hintContentUpdatedAt,
-            followUpChats = entity.followUpChats?.let {
+            followUpChats = entity.followUpChats?.let { serialized ->
                 runCatching {
-                    gson.fromJson<List<FollowUpChat>>(it, object : TypeToken<List<FollowUpChat>>() {}.type)
-                }.getOrNull()?.map { chat ->
-                    // 兼容旧数据：如果 id 为 null 则补生成
-                    @Suppress("SENSELESS_COMPARISON")
-                    if (chat.id == null) chat.copy(id = UUID.randomUUID().toString()) else chat
+                    gson.fromJson<List<FollowUpChat>>(
+                        serialized,
+                        object : TypeToken<List<FollowUpChat>>() {}.type
+                    )
+                }.getOrNull()?.let { chats ->
+                    FollowUpChatIds.ensureStable(
+                        questionId = entity.id,
+                        chats = chats,
+                        fallbackCreatedAt = entity.createdAt
+                    )
                 }
             } ?: emptyList(),
             followUpContentUpdatedAt = entity.followUpContentUpdatedAt,
@@ -113,8 +134,10 @@ object QuestionMapper {
             updatedAt = question.updatedAt,
             deleted = question.deleted,
             deletedAt = question.deletedAt,
+            restoredAt = question.restoredAt,
             syncStatus = question.syncStatus.name,
             contentUpdatedAt = question.contentUpdatedAt,
+            imageRefsUpdatedAt = question.imageRefsUpdatedAt,
             reviewCount = question.reviewCount,
             lastReviewedAt = question.lastReviewedAt,
             nextReviewAt = question.nextReviewAt,
@@ -122,6 +145,7 @@ object QuestionMapper {
             notesUpdatedAt = question.notesUpdatedAt,
             noteImagesUpdatedAt = question.noteImagesUpdatedAt,
             reviewUpdatedAt = question.reviewUpdatedAt,
+            reviewEvents = if (question.reviewEvents.isNotEmpty()) gson.toJson(question.reviewEvents) else null,
             analysis = question.analysis?.let { gson.toJson(it) },
             analysisContentUpdatedAt = question.analysisContentUpdatedAt,
             detailedExplanation = question.detailedExplanation,
@@ -135,5 +159,29 @@ object QuestionMapper {
             imageRefs = if (question.imageRefs.isNotEmpty()) gson.toJson(question.imageRefs) else null,
             noteImageRefs = if (question.noteImageRefs.isNotEmpty()) gson.toJson(question.noteImageRefs) else null
         )
+    }
+
+    private fun legacyReviewEvents(
+        questionId: String,
+        reviewCount: Int,
+        reviewedAt: Long
+    ): List<ReviewEvent> =
+        (1..reviewCount.coerceAtLeast(0)).map { index ->
+            ReviewEvent(
+                id = "legacy-review:$questionId:$index",
+                kind = ReviewEvent.KIND_REVIEW,
+                reviewedAt = reviewedAt,
+                quality = 2
+            )
+        }
+
+    private fun successfulReviewCount(events: List<ReviewEvent>): Int {
+        val revertedIds = events.asSequence()
+            .filter(ReviewEvent::isRevert)
+            .mapNotNull(ReviewEvent::targetEventId)
+            .toSet()
+        return events.count { event ->
+            event.isReview && event.id !in revertedIds && (event.quality ?: 2) > 0
+        }
     }
 }

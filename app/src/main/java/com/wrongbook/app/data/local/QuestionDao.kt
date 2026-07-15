@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,6 +16,9 @@ interface QuestionDao {
 
     @Query("SELECT * FROM questions ORDER BY updatedAt DESC")
     suspend fun getAllRawOnce(): List<QuestionEntity>
+
+    @Query("SELECT * FROM questions WHERE deleted = 1 ORDER BY deletedAt DESC")
+    fun getAllDeleted(): Flow<List<QuestionEntity>>
 
     @Query("SELECT * FROM questions WHERE deleted = 0 AND category = :category ORDER BY updatedAt DESC")
     fun getByCategory(category: String): Flow<List<QuestionEntity>>
@@ -58,6 +62,15 @@ interface QuestionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(entities: List<QuestionEntity>)
+
+    @Query("DELETE FROM questions")
+    suspend fun deleteAll()
+
+    @Transaction
+    suspend fun replaceAll(entities: List<QuestionEntity>) {
+        deleteAll()
+        if (entities.isNotEmpty()) insertAll(entities)
+    }
 
     @Update
     suspend fun update(entity: QuestionEntity)

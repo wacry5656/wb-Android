@@ -64,17 +64,34 @@ class HomeViewModel(
         viewModelScope.launch {
             _syncState.update { it.copy(isSyncing = true, message = "正在同步...") }
             try {
-                val local = repository.getAllRawOnce()
-                val remote = syncService.sync(local)
-                if (local.isNotEmpty() && remote.isEmpty()) {
-                    _syncState.update {
-                        it.copy(isSyncing = false, message = "同步异常：服务端返回空数据")
-                    }
-                    return@launch
+                var uploadSnapshot = repository.captureSyncSnapshot()
+                var result = syncService.sync(uploadSnapshot) { progress ->
+                    _syncState.update { it.copy(message = progress.message) }
                 }
-                repository.saveSyncedQuestions(remote)
+                var outcome = repository.applyCompleteSyncSnapshot(
+                    uploadSnapshot = uploadSnapshot,
+                    remoteSnapshot = result.records
+                )
+                if (outcome.replayedLocalChanges > 0) {
+                    _syncState.update { it.copy(message = "正在补传同步期间产生的本地修改…") }
+                    uploadSnapshot = repository.captureSyncSnapshot()
+                    result = syncService.sync(uploadSnapshot) { progress ->
+                        _syncState.update { it.copy(message = "补传：${progress.message}") }
+                    }
+                    outcome = repository.applyCompleteSyncSnapshot(
+                        uploadSnapshot = uploadSnapshot,
+                        remoteSnapshot = result.records
+                    )
+                }
+                syncService.cleanOrphanedImages(repository.getAllRawOnce())
+                val protocol = if (result.protocolVersion == 2) "v2" else "v1 兼容模式"
+                val replayMessage = outcome.replayedLocalChanges.takeIf { it > 0 }
+                    ?.let { "；又产生了 $it 项本地修改，已安全保留，待下次同步" }.orEmpty()
                 _syncState.update {
-                    it.copy(isSyncing = false, message = "同步完成：${remote.size} 题")
+                    it.copy(
+                        isSyncing = false,
+                        message = "同步完成（$protocol）：${result.downloadedCount} 题$replayMessage"
+                    )
                 }
             } catch (e: Exception) {
                 _syncState.update {

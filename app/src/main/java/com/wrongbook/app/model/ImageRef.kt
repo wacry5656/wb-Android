@@ -6,6 +6,8 @@ data class ImageRef(
     val kind: String = "question",
     val createdAt: Long = System.currentTimeMillis(),
     val mimeType: String? = null,
+    val contentHash: String? = null,
+    val status: String? = null,
     val dataUrl: String? = null,
     val uri: String? = null
 ) {

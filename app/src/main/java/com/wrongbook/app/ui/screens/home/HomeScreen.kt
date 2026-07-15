@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,7 +28,9 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -53,7 +57,14 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("错题本") })
+            TopAppBar(
+                title = { Text("错题本") },
+                actions = {
+                    IconButton(onClick = { navController.navigate(Screen.Trash.route) }) {
+                        Icon(Icons.Default.DeleteOutline, contentDescription = "回收站")
+                    }
+                }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -139,20 +150,52 @@ fun HomeScreen(
                 }
 
                 item {
-                    FilledTonalButton(
-                        onClick = viewModel::syncNow,
-                        enabled = !uiState.isSyncing,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(if (uiState.isSyncing) "正在同步..." else "同步到 VPS")
-                    }
-                    uiState.syncMessage?.let {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CloudSync,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text("跨设备安全同步", style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        "自动兼容当前 VPS，升级后启用分批与分页同步",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                FilledTonalButton(
+                                    onClick = viewModel::syncNow,
+                                    enabled = !uiState.isSyncing
+                                ) {
+                                    Text(if (uiState.isSyncing) "同步中" else "立即同步")
+                                }
+                            }
+                            if (uiState.isSyncing) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
+                            uiState.syncMessage?.let { message ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    message,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
 

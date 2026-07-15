@@ -57,7 +57,8 @@ private data class DetailLocalState(
 class DetailViewModel(
     private val questionId: String,
     private val repository: QuestionRepository,
-    private val aiService: AiService
+    private val aiService: AiService,
+    private val cleanupOrphanedImages: suspend () -> Unit = {}
 ) : ViewModel() {
 
     private val _localState = MutableStateFlow(DetailLocalState())
@@ -153,6 +154,7 @@ class DetailViewModel(
             _localState.update { it.copy(isSavingNoteImages = true) }
             try {
                 val saved = repository.saveNoteImages(question.id, noteImageRefs)
+                if (saved) cleanupOrphanedImages()
                 _localState.update {
                     it.copy(
                         isSavingNoteImages = false,
@@ -322,7 +324,14 @@ class DetailViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val app = WrongBookApp.instance
-            return DetailViewModel(questionId, app.repository, app.aiService) as T
+            return DetailViewModel(
+                questionId,
+                app.repository,
+                app.aiService,
+                cleanupOrphanedImages = {
+                    app.questionSyncService.cleanOrphanedImages(app.repository.getAllRawOnce())
+                }
+            ) as T
         }
     }
 }

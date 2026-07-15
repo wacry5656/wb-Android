@@ -21,6 +21,8 @@ data class ReviewUiState(
     val showAnswer: Boolean = false,
     val totalCount: Int = 0,
     val sortOrder: ReviewSortOrder = ReviewSortOrder.DUE_FIRST,
+    val lastCompletedQuestionId: String? = null,
+    val isUndoing: Boolean = false,
     val message: String? = null
 )
 
@@ -61,7 +63,7 @@ fun completeReview(quality: Int = 2) {
         val question = state.reviewQuestions.getOrNull(state.currentIndex) ?: return
         viewModelScope.launch {
             if (repository.completeReview(question.id, quality)) {
-                removeCurrentQuestion(question.id)
+                removeCurrentQuestion(question.id, undoable = quality > 0)
             } else {
                 _uiState.update { it.copy(message = "题目已不存在或已删除") }
             }
@@ -76,6 +78,23 @@ fun completeReview(quality: Int = 2) {
                 removeCurrentQuestion(question.id)
             } else {
                 _uiState.update { it.copy(message = "题目已不存在或已删除") }
+            }
+        }
+    }
+
+    fun undoLastSuccessfulReview() {
+        val questionId = _uiState.value.lastCompletedQuestionId ?: return
+        if (_uiState.value.isUndoing) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUndoing = true) }
+            val reverted = repository.revertLatestReview(questionId)
+            _uiState.update {
+                it.copy(
+                    isUndoing = false,
+                    lastCompletedQuestionId = if (reverted) null else questionId,
+                    completedCount = if (reverted) (it.completedCount - 1).coerceAtLeast(0) else it.completedCount,
+                    message = if (reverted) "已撤销最近一次成功复习，计数和间隔已回退" else "没有可撤销的成功复习"
+                )
             }
         }
     }
@@ -115,7 +134,7 @@ fun onSortOrderChange(order: ReviewSortOrder) {
         }
     }
 
-    private fun removeCurrentQuestion(questionId: String) {
+    private fun removeCurrentQuestion(questionId: String, undoable: Boolean = false) {
         _uiState.update { state ->
             val updatedQuestions = state.reviewQuestions.filterNot { it.id == questionId }
             if (updatedQuestions.isEmpty()) {
@@ -123,6 +142,7 @@ fun onSortOrderChange(order: ReviewSortOrder) {
                     reviewQuestions = emptyList(),
                     currentIndex = 0,
                     completedCount = state.completedCount + 1,
+                    lastCompletedQuestionId = if (undoable) questionId else state.lastCompletedQuestionId,
                     isCompleted = true,
                     showAnswer = false
                 )
@@ -131,6 +151,7 @@ fun onSortOrderChange(order: ReviewSortOrder) {
                     reviewQuestions = updatedQuestions,
                     currentIndex = state.currentIndex.coerceAtMost(updatedQuestions.lastIndex),
                     completedCount = state.completedCount + 1,
+                    lastCompletedQuestionId = if (undoable) questionId else state.lastCompletedQuestionId,
                     showAnswer = false
                 )
             }

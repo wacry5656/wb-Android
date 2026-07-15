@@ -7,7 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [QuestionEntity::class], version = 6, exportSchema = false)
+@Database(entities = [QuestionEntity::class], version = 7, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun questionDao(): QuestionDao
 
@@ -209,6 +209,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE questions ADD COLUMN restoredAt INTEGER")
+                db.execSQL("ALTER TABLE questions ADD COLUMN imageRefsUpdatedAt INTEGER")
+                db.execSQL("ALTER TABLE questions ADD COLUMN reviewEvents TEXT")
+                db.execSQL(
+                    "UPDATE questions SET imageRefsUpdatedAt = contentUpdatedAt " +
+                        "WHERE imageRefs IS NOT NULL AND TRIM(imageRefs) != '' AND imageRefs != '[]'"
+                )
+            }
+        }
+
         private fun hasColumn(
             db: SupportSQLiteDatabase,
             tableName: String,
@@ -239,7 +251,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_2_3,
                     MIGRATION_3_4,
                     MIGRATION_4_5,
-                    MIGRATION_5_6
+                    MIGRATION_5_6,
+                    MIGRATION_6_7
                 )
                     .build()
                 INSTANCE = instance

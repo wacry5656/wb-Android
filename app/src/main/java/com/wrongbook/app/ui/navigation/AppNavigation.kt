@@ -11,6 +11,7 @@ import com.wrongbook.app.ui.screens.detail.DetailScreen
 import com.wrongbook.app.ui.screens.home.HomeScreen
 import com.wrongbook.app.ui.screens.list.QuestionListScreen
 import com.wrongbook.app.ui.screens.review.ReviewScreen
+import com.wrongbook.app.ui.screens.trash.TrashScreen
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
@@ -23,6 +24,7 @@ sealed class Screen(val route: String) {
         fun createRoute(questionId: String) = "question_detail/$questionId"
     }
     object Review : Screen("review")
+    object Trash : Screen("trash")
 }
 
 @Composable
@@ -66,6 +68,10 @@ fun AppNavHost(navController: NavHostController) {
 
         composable(Screen.Review.route) {
             ReviewScreen(navController = navController)
+        }
+
+        composable(Screen.Trash.route) {
+            TrashScreen(navController = navController)
         }
     }
 }

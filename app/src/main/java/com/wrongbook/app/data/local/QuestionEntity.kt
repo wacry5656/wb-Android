@@ -22,8 +22,10 @@ data class QuestionEntity(
     val updatedAt: Long,
     val deleted: Boolean,
     val deletedAt: Long?,
+    val restoredAt: Long? = null,
     val syncStatus: String,
     val contentUpdatedAt: Long,
+    val imageRefsUpdatedAt: Long? = null,
     val reviewCount: Int,
     val lastReviewedAt: Long?,
     val nextReviewAt: Long?,
@@ -31,6 +33,7 @@ data class QuestionEntity(
     val notesUpdatedAt: Long?,
     val noteImagesUpdatedAt: Long?,
     val reviewUpdatedAt: Long?,
+    val reviewEvents: String? = null, // JSON serialized List<ReviewEvent>
     val analysis: String?,           // JSON serialized QuestionAnalysis
     val analysisContentUpdatedAt: Long?,
     val detailedExplanation: String?,

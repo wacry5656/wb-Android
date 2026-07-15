@@ -43,7 +43,8 @@ data class AddEditUiState(
 
 class AddEditViewModel(
     private val repository: QuestionRepository,
-    private val questionId: String? = null
+    private val questionId: String? = null,
+    private val cleanupOrphanedImages: suspend () -> Unit = {}
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -228,6 +229,7 @@ class AddEditViewModel(
                         )
                     }
                 } else {
+                    cleanupOrphanedImages()
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
                 }
             } catch (e: Exception) {
@@ -242,7 +244,10 @@ class AddEditViewModel(
             val app = WrongBookApp.instance
             return AddEditViewModel(
                 repository = app.repository,
-                questionId = questionId
+                questionId = questionId,
+                cleanupOrphanedImages = {
+                    app.questionSyncService.cleanOrphanedImages(app.repository.getAllRawOnce())
+                }
             ) as T
         }
     }

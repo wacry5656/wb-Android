@@ -7,17 +7,18 @@ import com.wrongbook.app.ai.DashScopeAiService
 import com.wrongbook.app.ai.DashScopeClient
 import com.wrongbook.app.ai.FakeAiService
 import com.wrongbook.app.data.local.AppDatabase
-import com.wrongbook.app.data.local.SeedData
 import com.wrongbook.app.data.repository.QuestionRepository
 import com.wrongbook.app.sync.QuestionSyncService
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class WrongBookApp : Application() {
 
     val database by lazy { AppDatabase.getInstance(this) }
-    val repository by lazy { QuestionRepository(database.questionDao()) }
+    val repository by lazy {
+        QuestionRepository(
+            dao = database.questionDao(),
+            deviceId = BuildConfig.SYNC_DEVICE_ID.ifBlank { "android-main" }
+        )
+    }
     val questionSyncService by lazy {
         QuestionSyncService(
             context = applicationContext,
@@ -36,7 +37,6 @@ class WrongBookApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        seedIfEmpty()
 
         if (!isRealAi) {
             Log.w("WrongBookApp", "DASHSCOPE_API_KEY 未配置，将使用 FakeAiService 作为降级方案")
@@ -62,16 +62,6 @@ class WrongBookApp : Application() {
             client = client,
             context = applicationContext
         )
-    }
-
-    private fun seedIfEmpty() {
-        CoroutineScope(Dispatchers.IO).launch {
-            if (repository.count() == 0) {
-                SeedData.getSampleQuestions().forEach {
-                    database.questionDao().insert(it)
-                }
-            }
-        }
     }
 
     companion object {
