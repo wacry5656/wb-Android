@@ -43,7 +43,7 @@ android {
             // Debug builds can use the local key for development and testing.
             buildConfigField("String", "DASHSCOPE_API_KEY", buildConfigString(localProp("DASHSCOPE_API_KEY")))
             buildConfigField("String", "DASHSCOPE_BASE_URL", buildConfigString(localProp("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")))
-            buildConfigField("String", "DASHSCOPE_MODEL", buildConfigString(localProp("DASHSCOPE_MODEL", "qwen3.6-plus")))
+            buildConfigField("String", "DASHSCOPE_MODEL", buildConfigString(localProp("DASHSCOPE_MODEL", "qwen3.7-plus")))
             buildConfigField("String", "SYNC_API_URL", buildConfigString(localProp("SYNC_API_URL")))
             buildConfigField("String", "SYNC_TOKEN", buildConfigString(localProp("SYNC_TOKEN")))
             buildConfigField("String", "SYNC_DEVICE_ID", buildConfigString(localProp("SYNC_DEVICE_ID", "android-main")))
@@ -54,7 +54,7 @@ android {
             // Personal release builds use the local DashScope key.
             buildConfigField("String", "DASHSCOPE_API_KEY", buildConfigString(localProp("DASHSCOPE_API_KEY")))
             buildConfigField("String", "DASHSCOPE_BASE_URL", buildConfigString(localProp("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")))
-            buildConfigField("String", "DASHSCOPE_MODEL", buildConfigString(localProp("DASHSCOPE_MODEL", "qwen3.6-plus")))
+            buildConfigField("String", "DASHSCOPE_MODEL", buildConfigString(localProp("DASHSCOPE_MODEL", "qwen3.7-plus")))
             buildConfigField("String", "SYNC_API_URL", buildConfigString(localProp("SYNC_API_URL")))
             buildConfigField("String", "SYNC_TOKEN", buildConfigString(localProp("SYNC_TOKEN")))
             buildConfigField("String", "SYNC_DEVICE_ID", buildConfigString(localProp("SYNC_DEVICE_ID", "android-main")))

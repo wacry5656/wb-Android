@@ -3,7 +3,7 @@
 
 DASHSCOPE_API_KEY=
 DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-DASHSCOPE_MODEL=qwen3.6-plus
+DASHSCOPE_MODEL=qwen3.7-plus
 SYNC_API_URL=https://gf.cook1ek1ng.xyz/api/sync
 SYNC_TOKEN=your-sync-token
 SYNC_DEVICE_ID=android-main

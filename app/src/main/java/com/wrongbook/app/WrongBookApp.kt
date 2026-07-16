@@ -56,7 +56,7 @@ class WrongBookApp : Application() {
         val client = DashScopeClient(
             apiKey = apiKey,
             baseUrl = baseUrl.ifBlank { "https://dashscope.aliyuncs.com/compatible-mode/v1" },
-            model = model.ifBlank { "qwen3.6-plus" }
+            model = model.ifBlank { "qwen3.7-plus" }
         )
         return DashScopeAiService(
             client = client,

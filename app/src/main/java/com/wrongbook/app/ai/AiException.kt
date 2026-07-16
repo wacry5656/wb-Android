@@ -6,5 +6,15 @@ package com.wrongbook.app.ai
  */
 class AiException(
     override val message: String,
-    override val cause: Throwable? = null
-) : Exception(message, cause)
+    override val cause: Throwable? = null,
+    val httpStatus: Int? = null,
+    val errorCode: String? = null,
+    val providerMessage: String? = null
+) : Exception(message, cause) {
+    val isVisionUnsupported: Boolean
+        get() = DashScopeErrorMapper.isVisionUnsupported(
+            status = httpStatus,
+            errorCode = errorCode,
+            providerMessage = providerMessage
+        )
+}

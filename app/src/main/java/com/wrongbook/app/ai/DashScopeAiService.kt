@@ -84,7 +84,8 @@ class DashScopeAiService(
                     enableThinking = enableThinking
                 )
             } catch (e: AiException) {
-                Log.w(TAG, "Vision request failed, fallback to text prompt: ${e.message}")
+                if (!e.isVisionUnsupported) throw e
+                Log.w(TAG, "Model explicitly rejected image input, fallback to text prompt: ${e.message}")
             }
         }
         return client.chatCompletion(
@@ -117,7 +118,8 @@ class DashScopeAiService(
                 messages.add(DashScopeClient.ChatMessage("user", userMessage))
                 return client.chatCompletion(messages = messages, temperature = 0.7, enableThinking = true)
             } catch (e: AiException) {
-                Log.w(TAG, "Vision follow-up failed, fallback to text prompt: ${e.message}")
+                if (!e.isVisionUnsupported) throw e
+                Log.w(TAG, "Model explicitly rejected image input, fallback to text prompt: ${e.message}")
             }
         }
         return client.chatCompletion(

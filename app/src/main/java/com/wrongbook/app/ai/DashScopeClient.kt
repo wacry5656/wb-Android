@@ -59,17 +59,13 @@ class DashScopeClient(
 
         val url = "${baseUrl.trimEnd('/')}/chat/completions"
 
-        val bodyFields = mutableMapOf<String, Any>(
-            "model" to model,
-            "messages" to messages.map { mapOf("role" to it.role, "content" to it.content) },
-            "temperature" to temperature
+        val bodyFields = buildDashScopeRequestFields(
+            model = model,
+            messages = messages,
+            temperature = temperature,
+            responseJsonObject = responseJsonObject,
+            enableThinking = enableThinking
         )
-        if (responseJsonObject) {
-            bodyFields["response_format"] = mapOf("type" to "json_object")
-        }
-        if (enableThinking) {
-            bodyFields["enable_thinking"] = true
-        }
 
         val requestBody = gson.toJson(bodyFields)
 
@@ -97,13 +93,18 @@ val response = try {
                 if (BuildConfig.DEBUG) {
                     Log.e(TAG, "HTTP ${resp.code}: $body")
                 }
-                val errorMsg = try {
-                    val errorJson = JsonParser.parseString(body).asJsonObject
-                    errorJson.getAsJsonObject("error")?.get("message")?.asString
-                } catch (_: Exception) { null }
+                val providerError = parseProviderError(body)
 
                 throw AiException(
-                    "AI 接口返回错误 (${resp.code}): ${errorMsg ?: body.take(200)}"
+                    message = DashScopeErrorMapper.friendlyMessage(
+                        status = resp.code,
+                        errorCode = providerError.code,
+                        providerMessage = providerError.message,
+                        rawBody = body
+                    ),
+                    httpStatus = resp.code,
+                    errorCode = providerError.code,
+                    providerMessage = providerError.message
                 )
             }
 
@@ -131,4 +132,46 @@ val response = try {
             }
         }
     }
+
+    private fun parseProviderError(body: String): ProviderError = try {
+        val root = JsonParser.parseString(body).asJsonObject
+        val error = root.get("error")
+            ?.takeIf { it.isJsonObject }
+            ?.asJsonObject
+        ProviderError(
+            code = error?.stringOrNull("code") ?: root.stringOrNull("code"),
+            message = error?.stringOrNull("message") ?: root.stringOrNull("message")
+        )
+    } catch (_: Exception) {
+        ProviderError(code = null, message = null)
+    }
+
+    private fun JsonObject.stringOrNull(name: String): String? =
+        get(name)
+            ?.takeIf { !it.isJsonNull && it.isJsonPrimitive }
+            ?.asString
+
+    private data class ProviderError(
+        val code: String?,
+        val message: String?
+    )
+}
+
+internal fun buildDashScopeRequestFields(
+    model: String,
+    messages: List<DashScopeClient.ChatMessage>,
+    temperature: Double,
+    responseJsonObject: Boolean,
+    enableThinking: Boolean
+): Map<String, Any> {
+    val fields = mutableMapOf<String, Any>(
+        "model" to model,
+        "messages" to messages.map { mapOf("role" to it.role, "content" to it.content) },
+        "temperature" to temperature,
+        "enable_thinking" to enableThinking
+    )
+    if (responseJsonObject) {
+        fields["response_format"] = mapOf("type" to "json_object")
+    }
+    return fields
 }
